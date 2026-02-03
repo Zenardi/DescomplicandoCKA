@@ -1,0 +1,6 @@
+aws_region   = "us-east-1"
+name_prefix  = "cka-zenardi"
+vpc_id       = "vpc-9bfdcde3"
+subnet_id    = "subnet-52cba66d"
+key_name     = "zenardi-cka-keypair"
+allowed_cidr = "185.153.176.205/32"

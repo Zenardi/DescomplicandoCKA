@@ -1,0 +1,12 @@
+tf.plan
+*.tfstate
+*.tfstate.backup
+.terraform/
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+.terragrunt-cache/
+*.pem
