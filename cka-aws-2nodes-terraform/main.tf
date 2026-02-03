@@ -49,6 +49,14 @@ resource "aws_instance" "nodes" {
   key_name                    = var.key_name
   associate_public_ip_address = true
 
+  instance_market_options {
+    market_type = "spot"
+
+    spot_options {
+      instance_interruption_behavior = "stop"
+    }
+  }
+
   root_block_device {
     volume_size = var.root_volume_gb
     volume_type = "gp3"
