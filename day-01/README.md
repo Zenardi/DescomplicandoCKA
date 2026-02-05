@@ -17,6 +17,12 @@
   - [Instalando Cilium](#instalando-cilium)
   - [Validando Instalacao](#validando-instalacao)
   - [Instalando Cilium CNI](#instalando-cilium-cni)
+- [Backup do ETCD](#backup-do-etcd)
+- [Upgrade do Cluster 1.34 -\> 1.35](#upgrade-do-cluster-134---135)
+  - [1. Atualizar kubeadm no control plane](#1-atualizar-kubeadm-no-control-plane)
+  - [2. Aplicar o upgrade do control plane](#2-aplicar-o-upgrade-do-control-plane)
+  - [3. Atualizar kubelet e kubectl no control plane](#3-atualizar-kubelet-e-kubectl-no-control-plane)
+  - [4. Upgrade dos worker nodes](#4-upgrade-dos-worker-nodes)
 - [Materiais](#materiais)
 - [Exercicio](#exercicio)
   - [Lista 1 - Day 1](#lista-1---day-1)
@@ -259,6 +265,68 @@ NAME           STATUS   ROLES           AGE   VERSION
 controlplane   Ready    control-plane   74m   v1.34.3
 node01         Ready    <none>          73m   v1.34.3
 ```
+
+# Backup do ETCD
+Execute no **control plane**:
+
+```sh
+sudo ETCDCTL_API=3 etcdctl snapshot save /tmp/cka-snapshot.db \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key
+
+sudo ETCDCTL_API=3 etcdctl snapshot status /tmp/cka-snapshot.db
+```
+
+# Upgrade do Cluster 1.34 -> 1.35
+Estas etapas assumem Ubuntu/Debian e Kubernetes 1.34 já instalado. Execute **primeiro no control plane**, depois em cada worker.
+
+## 1. Atualizar kubeadm no control plane
+```sh
+sudo apt-mark unhold kubeadm
+sudo apt-get update
+sudo apt-get install -y kubeadm=1.35.*
+sudo apt-mark hold kubeadm
+```
+
+## 2. Aplicar o upgrade do control plane
+```sh
+sudo kubeadm upgrade plan
+sudo kubeadm upgrade apply v1.35.x
+```
+
+## 3. Atualizar kubelet e kubectl no control plane
+```sh
+sudo apt-mark unhold kubelet kubectl
+sudo apt-get install -y kubelet=1.35.* kubectl=1.35.*
+sudo apt-mark hold kubelet kubectl
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+```
+
+## 4. Upgrade dos worker nodes
+Em cada worker:
+```sh
+sudo apt-mark unhold kubeadm
+sudo apt-get update
+sudo apt-get install -y kubeadm=1.35.*
+sudo apt-mark hold kubeadm
+
+sudo kubeadm upgrade node
+
+sudo apt-mark unhold kubelet kubectl
+sudo apt-get install -y kubelet=1.35.* kubectl=1.35.*
+sudo apt-mark hold kubelet kubectl
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+```
+
+Valide no control plane:
+```sh
+kubectl get nodes -o wide
+```
+
 
 
 
