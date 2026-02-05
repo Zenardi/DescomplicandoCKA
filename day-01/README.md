@@ -7,13 +7,13 @@
   - [3. Configurando parametros de `kubernetes.conf`](#3-configurando-parametros-de-kubernetesconf)
   - [4. Instalando o Containerd](#4-instalando-o-containerd)
   - [Instalando o kubelet, kubeadmin e kubectl](#instalando-o-kubelet-kubeadmin-e-kubectl)
-    - [1. Update the apt package index and install packages needed to use the Kubernetes apt repository:](#1-update-the-apt-package-index-and-install-packages-needed-to-use-the-kubernetes-apt-repository)
-    - [2. Download the public signing key for the Kubernetes package repositories. The same signing key is used for all repositories so you can disregard the version in the URL:](#2-download-the-public-signing-key-for-the-kubernetes-package-repositories-the-same-signing-key-is-used-for-all-repositories-so-you-can-disregard-the-version-in-the-url)
-    - [3. Add the appropriate Kubernetes apt repository. Please note that this repository have packages only for Kubernetes 1.34; for other Kubernetes minor versions, you need to change the Kubernetes minor version in the URL to match your desired minor version (you should also check that you are reading the documentation for the version of Kubernetes that you plan to install).](#3-add-the-appropriate-kubernetes-apt-repository-please-note-that-this-repository-have-packages-only-for-kubernetes-134-for-other-kubernetes-minor-versions-you-need-to-change-the-kubernetes-minor-version-in-the-url-to-match-your-desired-minor-version-you-should-also-check-that-you-are-reading-the-documentation-for-the-version-of-kubernetes-that-you-plan-to-install)
-    - [4. Update the apt package index, install kubelet, kubeadm and kubectl, and pin their version:](#4-update-the-apt-package-index-install-kubelet-kubeadm-and-kubectl-and-pin-their-version)
-    - [5. (Optional) Enable the kubelet service before running kubeadm:](#5-optional-enable-the-kubelet-service-before-running-kubeadm)
-- [Init Control Plane config](#init-control-plane-config)
-- [Setup Cilium CNI](#setup-cilium-cni)
+    - [1. Atualize o índice de pacotes do apt e instale os pacotes necessários para usar o repositório apt do Kubernetes](#1-atualize-o-índice-de-pacotes-do-apt-e-instale-os-pacotes-necessários-para-usar-o-repositório-apt-do-kubernetes)
+    - [2. Baixe a chave de assinatura pública para os repositórios de pacotes do Kubernetes. A mesma chave de assinatura é usada para todos os repositórios, portanto, você pode ignorar a versão na URL](#2-baixe-a-chave-de-assinatura-pública-para-os-repositórios-de-pacotes-do-kubernetes-a-mesma-chave-de-assinatura-é-usada-para-todos-os-repositórios-portanto-você-pode-ignorar-a-versão-na-url)
+    - [3. Adicione o repositório apt do Kubernetes apropriado. Observe que este repositório contém pacotes apenas para o Kubernetes `1.34`; para outras versões secundárias do Kubernetes, você precisa alterar a versão secundária do Kubernetes na URL para corresponder à versão desejada (você também deve verificar a documentação da versão do Kubernetes que pretende instalar)](#3-adicione-o-repositório-apt-do-kubernetes-apropriado-observe-que-este-repositório-contém-pacotes-apenas-para-o-kubernetes-134-para-outras-versões-secundárias-do-kubernetes-você-precisa-alterar-a-versão-secundária-do-kubernetes-na-url-para-corresponder-à-versão-desejada-você-também-deve-verificar-a-documentação-da-versão-do-kubernetes-que-pretende-instalar)
+    - [4. Atualize o índice de pacotes do apt, instale o kubelet, o kubeadm e o kubectl e fixe as versões correspondentes](#4-atualize-o-índice-de-pacotes-do-apt-instale-o-kubelet-o-kubeadm-e-o-kubectl-e-fixe-as-versões-correspondentes)
+    - [5. (Opcional) Habilite o serviço kubelet antes de executar o kubeadm](#5-opcional-habilite-o-serviço-kubelet-antes-de-executar-o-kubeadm)
+- [Inicializando o Control Plane com `kubeadm`](#inicializando-o-control-plane-com-kubeadm)
+- [Instalando o Cilium CNI](#instalando-o-cilium-cni)
   - [Instalando Cilium](#instalando-cilium)
   - [Validando Instalacao](#validando-instalacao)
   - [Instalando Cilium CNI](#instalando-cilium-cni)
@@ -81,57 +81,62 @@ sudo systemctl status containerd
 
 
 ## Instalando o kubelet, kubeadmin e kubectl
-You will install these packages on all of your machines:
+Você instalará estes pacotes em todas as suas máquinas:
 
-* kubeadm: the command to bootstrap the cluster.
+* `kubeadm`: o comando para inicializar o cluster.
 
-* kubelet: the component that runs on all of the machines in your cluster and does things like starting pods and containers.
+* `kubelet`: o componente que é executado em todas as máquinas do seu cluster e realiza tarefas como iniciar pods e contêineres.
 
-* kubectl: the command line util to talk to your cluster.
+* `kubectl`: o utilitário de linha de comando para se comunicar com o seu cluster.
 
 > [!IMPORTANT]
-> These instructions are for Kubernetes v1.34. 
+> Estas instrucoes sao para o Kubernetes v1.34. 
 
 
-### 1. Update the apt package index and install packages needed to use the Kubernetes apt repository:
+### 1. Atualize o índice de pacotes do apt e instale os pacotes necessários para usar o repositório apt do Kubernetes
 ```sh
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 ```
 
-### 2. Download the public signing key for the Kubernetes package repositories. The same signing key is used for all repositories so you can disregard the version in the URL:
+### 2. Baixe a chave de assinatura pública para os repositórios de pacotes do Kubernetes. A mesma chave de assinatura é usada para todos os repositórios, portanto, você pode ignorar a versão na URL
 
 ```sh
-# If the directory `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
+# Se o diretório `/etc/apt/keyrings` não existir, ele deverá ser criado antes do comando curl, leia a nota abaixo.
 # sudo mkdir -p -m 755 /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 ```
 
-### 3. Add the appropriate Kubernetes apt repository. Please note that this repository have packages only for Kubernetes 1.34; for other Kubernetes minor versions, you need to change the Kubernetes minor version in the URL to match your desired minor version (you should also check that you are reading the documentation for the version of Kubernetes that you plan to install).
+### 3. Adicione o repositório apt do Kubernetes apropriado. Observe que este repositório contém pacotes apenas para o Kubernetes `1.34`; para outras versões secundárias do Kubernetes, você precisa alterar a versão secundária do Kubernetes na URL para corresponder à versão desejada (você também deve verificar a documentação da versão do Kubernetes que pretende instalar)
 
 ```sh
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 ```
 
-### 4. Update the apt package index, install kubelet, kubeadm and kubectl, and pin their version:
+### 4. Atualize o índice de pacotes do apt, instale o kubelet, o kubeadm e o kubectl e fixe as versões correspondentes
 ```sh
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 ```
 
-### 5. (Optional) Enable the kubelet service before running kubeadm:
+### 5. (Opcional) Habilite o serviço kubelet antes de executar o kubeadm
 ```sh
 sudo systemctl enable --now kubelet
 ```
 
 
-# Init Control Plane config
+# Inicializando o Control Plane com `kubeadm`
+Hora de inicializar nosso control plane. Para isso execute siga as instrucoes abaixo.
+
+> [!IMPORTANT]
+> Execute estes comandos apenas na maquina responsavel por ser o `control plane`. 
 
 ```sh
+# Execute este comando para fazer o setup do control plane do Kubernetes
 kubeadm init
 
-# To start using your cluster, you need to run the following as a regular user:
+# Para iniciar o uso do cluster, voce precisa executar as seguintes linhas de comand usando o usuario regular (sem ser root)
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -148,7 +153,7 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 >   #        --discovery-token-ca-cert-hash <ca-cert-hash>
 >```
 
-# Setup Cilium CNI
+# Instalando o Cilium CNI
 Depois de inicializar o control plane com `kubeadm init` e executar `kubectl get nodes` voce percebe que o status do controlplane nao esta pronto (`NotReady`). Isso acontece pois nao configuramos ainda uma `CNI` (**Container Network Interface**). Para corrigit isso, vamos usar o [Cilium](https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/).
 
 ```sh
@@ -158,7 +163,7 @@ controlplane   NotReady   control-plane   84s   v1.34.3
 ```
 
 ## Instalando Cilium
-Install the latest version of the Cilium CLI. The Cilium CLI can be used to install Cilium, inspect the state of a Cilium installation, and enable/disable various features (e.g. clustermesh, Hubble).
+Instale a versão mais recente da CLI do Cilium. A CLI do Cilium pode ser usada para instalar o Cilium, inspecionar o estado de uma instalação do Cilium e ativar/desativar vários recursos (por exemplo, clustermesh, Hubble).
 
 ```sh
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
@@ -171,7 +176,7 @@ rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 ```
 
 ## Validando Instalacao
-To validate that Cilium has been properly installed, you can run
+Para verificar se o Cilium foi instalado corretamente, você pode executar o seguinte comando:
 ```sh
 > cilium status --wait
 
@@ -190,7 +195,7 @@ Image versions    cilium             quay.io/cilium/cilium:v1.9.5: 2
                   cilium-operator    quay.io/cilium/operator-generic:v1.9.5: 2
 ```
 
-Run the following command to validate that your cluster has proper network connectivity:
+Execute o seguinte comando para validar se o seu cluster possui conectividade de rede adequada:
 
 ```
 > cilium connectivity test
@@ -221,6 +226,7 @@ controlplane   Ready    control-plane   30m   v1.34.3
 
 # Materiais
 * https://kubernetes.io/docs/reference/setup-tools/kubeadm/
+* https://v1-34.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
 * https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/
 * https://github.com/techiescamp/cka-certification-guide
 * https://github.com/Zenardi/vagrant-kubeadm-kubernetes
