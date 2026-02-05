@@ -1,12 +1,43 @@
 # DAY 01
 
+- [DAY 01](#day-01)
+- [Configurando o ControlPlane \& Worker Nodes](#configurando-o-controlplane--worker-nodes)
+  - [1. Desativando de forma permanente o swap](#1-desativando-de-forma-permanente-o-swap)
+  - [2. Habilitando os modulos `overlay` e `br_netfilter`](#2-habilitando-os-modulos-overlay-e-br_netfilter)
+  - [3. Configurando parametros de `kubernetes.conf`](#3-configurando-parametros-de-kubernetesconf)
+  - [4. Instalando o Containerd](#4-instalando-o-containerd)
+  - [Instalando o kubelet, kubeadmin e kubectl](#instalando-o-kubelet-kubeadmin-e-kubectl)
+    - [1. Update the apt package index and install packages needed to use the Kubernetes apt repository:](#1-update-the-apt-package-index-and-install-packages-needed-to-use-the-kubernetes-apt-repository)
+    - [2. Download the public signing key for the Kubernetes package repositories. The same signing key is used for all repositories so you can disregard the version in the URL:](#2-download-the-public-signing-key-for-the-kubernetes-package-repositories-the-same-signing-key-is-used-for-all-repositories-so-you-can-disregard-the-version-in-the-url)
+    - [3. Add the appropriate Kubernetes apt repository. Please note that this repository have packages only for Kubernetes 1.34; for other Kubernetes minor versions, you need to change the Kubernetes minor version in the URL to match your desired minor version (you should also check that you are reading the documentation for the version of Kubernetes that you plan to install).](#3-add-the-appropriate-kubernetes-apt-repository-please-note-that-this-repository-have-packages-only-for-kubernetes-134-for-other-kubernetes-minor-versions-you-need-to-change-the-kubernetes-minor-version-in-the-url-to-match-your-desired-minor-version-you-should-also-check-that-you-are-reading-the-documentation-for-the-version-of-kubernetes-that-you-plan-to-install)
+    - [4. Update the apt package index, install kubelet, kubeadm and kubectl, and pin their version:](#4-update-the-apt-package-index-install-kubelet-kubeadm-and-kubectl-and-pin-their-version)
+    - [5. (Optional) Enable the kubelet service before running kubeadm:](#5-optional-enable-the-kubelet-service-before-running-kubeadm)
+- [Init Control Plane config](#init-control-plane-config)
+- [Setup Cilium CNI](#setup-cilium-cni)
+  - [Instalando Cilium](#instalando-cilium)
+  - [Validando Instalacao](#validando-instalacao)
+  - [Instalando Cilium CNI](#instalando-cilium-cni)
+- [Materiais](#materiais)
+- [Exercicio](#exercicio)
+  - [Lista 1 - Day 1](#lista-1---day-1)
 
 
-# ControlPlane & Worker Node
+# Configurando o ControlPlane & Worker Nodes
+
+Execute estes passos para configurar o *`Control Plane`* e *`Worker Nodes`*.
+
+## 1. Desativando de forma permanente o swap
+As vezes ao desativar o swap apenas usando `sudo swapoff -a` nao eh o suficiente, precisamos desabilitar de forma permanente e mais '**bruta**', para que depois de um reboot, a configuracao nao volte.
+
 ```sh
 sudo swapoff -a
 sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+sudo rm -f /swap.img
+sudo systemctl daemon-reload
+```
 
+## 2. Habilitando os modulos `overlay` e `br_netfilter`
+```sh
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -14,7 +45,10 @@ EOF
 
 sudo modprobe overlay
 sudo modprobe br_netfilter
+```
 
+## 3. Configurando parametros de `kubernetes.conf`
+```sh
 cat <<EOF | sudo tee /etc/sysctl.d/kubernetes.conf
 net.ipv4.ip_forward = 1
 net.ipv4.conf.all.forwarding = 1
@@ -26,9 +60,12 @@ net.ipv6.conf.all.rp_filter = 0
 EOF
 
 sudo sysctl --system
+```
 
-#Containerd 
 
+## 4. Instalando o Containerd 
+
+```sh
 sudo apt-get update
 apt install -y containerd
 
@@ -43,7 +80,7 @@ sudo systemctl status containerd
 ```
 
 
-## Install kubelet, kubeadmin e kubectl
+## Instalando o kubelet, kubeadmin e kubectl
 You will install these packages on all of your machines:
 
 * kubeadm: the command to bootstrap the cluster.
@@ -99,8 +136,7 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Alternatively, if you are the root user, you can run:
-
+# Adicione a seguinte linha no .bashrc
 export KUBECONFIG=/etc/kubernetes/admin.conf
 ```
 
@@ -185,6 +221,9 @@ controlplane   Ready    control-plane   30m   v1.34.3
 
 # Materiais
 * https://kubernetes.io/docs/reference/setup-tools/kubeadm/
+* https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/
+* https://github.com/techiescamp/cka-certification-guide
+* https://github.com/Zenardi/vagrant-kubeadm-kubernetes
 
 
 # Exercicio
