@@ -158,7 +158,9 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 export KUBECONFIG=/etc/kubernetes/admin.conf
 ```
 
-> [!TIP] Regerar o token que permite novos nodes se juntarem ao control plane 
+> [!TIP] 
+> Regerar o token que permite novos nodes se juntarem ao control plane 
+> 
 >   ```sh
 >   kubeadm token create --print-join-command
 >
