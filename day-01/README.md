@@ -231,8 +231,18 @@ Execute o seguinte comando para validar se o seu cluster possui conectividade de
 ## Instalando Cilium CNI
 Para instalar o Cilium simplesmente execute
 
+> [!CAUTION]
+> Se estiver usando o laboratorio de Vagrant, use este comando para instalar o Cilium
+> ```sh
+> cilium install --set k8sServiceHost=192.168.201.10 --set k8sServicePort=6443
+> ```
+> O API server do Vagrant está no IP da rede privada (192.168.201.10), veja o `settings.yaml`
+
 ```sh
 cilium install
+
+# Caso esteja usando o setup local com Vagrant, use
+cilium install --set k8sServiceHost=192.168.201.10 --set k8sServicePort=6443
 ```
 
 Depois de instalado e de alguns minutos, voce pode constatar que o nó agora está Pronto (`Ready`).
@@ -241,6 +251,16 @@ Depois de instalado e de alguns minutos, voce pode constatar que o nó agora est
 NAME           STATUS   ROLES           AGE   VERSION
 controlplane   Ready    control-plane   30m   v1.34.3
 ```
+
+Depois de fazer o setup nos `Worker Nodes` o daemon set do Cilium se encarregara de instalar o CNI nele e depois de ingressar no `Control Plane`, o `Worker Node` ira aparecer como Pronto (`Ready`).
+```sh
+> kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   74m   v1.34.3
+node01         Ready    <none>          73m   v1.34.3
+```
+
+
 
 # Materiais
 * https://kubernetes.io/docs/reference/setup-tools/kubeadm/

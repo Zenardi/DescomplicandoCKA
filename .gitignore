@@ -11,3 +11,4 @@ override.tf.json
 .terragrunt-cache/
 *.pem
 terraform.tfvars
+.vagrant/
