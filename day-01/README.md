@@ -154,8 +154,11 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Adicione a seguinte linha no .bashrc
+# Adicione a seguinte linha no final do .bashrc
 export KUBECONFIG=/etc/kubernetes/admin.conf
+
+# Recarregue o .bashrc
+source .bashrc
 ```
 
 > [!TIP] 
