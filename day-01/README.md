@@ -132,9 +132,22 @@ Hora de inicializar nosso control plane. Para isso execute siga as instrucoes ab
 > [!IMPORTANT]
 > Execute estes comandos apenas na maquina responsavel por ser o `control plane`. 
 
+> [!CAUTION]
+> Se estiver usando o laboratorio de Vagrant, use este comando para inicializar o control plane
+> ```sh
+> sudo kubeadm init --apiserver-advertise-address=192.168.201.10
+> ```
+> O API server do Vagrant está no IP da rede privada (192.168.201.10), veja o `settings.yaml`
+
+
+
+
 ```sh
 # Execute este comando para fazer o setup do control plane do Kubernetes
 kubeadm init
+
+# Caso esteja usando o setup local com Vagrant, use
+kubeadm init --apiserver-advertise-address=192.168.201.10
 
 # Para iniciar o uso do cluster, voce precisa executar as seguintes linhas de comand usando o usuario regular (sem ser root)
 mkdir -p $HOME/.kube
