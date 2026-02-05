@@ -17,6 +17,7 @@
   - [Instalando Cilium](#instalando-cilium)
   - [Validando Instalacao](#validando-instalacao)
   - [Instalando Cilium CNI](#instalando-cilium-cni)
+  - [Criando um recurso dentro do nosso novo cluster](#criando-um-recurso-dentro-do-nosso-novo-cluster)
 - [Backup do ETCD](#backup-do-etcd)
 - [Upgrade do Cluster 1.34 -\> 1.35](#upgrade-do-cluster-134---135)
   - [1. Atualizar kubeadm no control plane](#1-atualizar-kubeadm-no-control-plane)
@@ -73,13 +74,13 @@ sudo sysctl --system
 
 ```sh
 sudo apt-get update
-apt install -y containerd
+sudo apt install -y containerd
 
-mkdir -p /etc/containerd
+sudo mkdir -p /etc/containerd
 
-containerd config default>/etc/containerd/config.toml
+sudo containerd config default>/etc/containerd/config.toml
 
-sed -i 's/SystemdCgroup.*/SystemdCgroup = true/g' /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup.*/SystemdCgroup = true/g' /etc/containerd/config.toml
 
 sudo systemctl enable --now containerd
 sudo systemctl status containerd
@@ -264,6 +265,45 @@ Depois de fazer o setup nos `Worker Nodes` o daemon set do Cilium se encarregara
 NAME           STATUS   ROLES           AGE   VERSION
 controlplane   Ready    control-plane   74m   v1.34.3
 node01         Ready    <none>          73m   v1.34.3
+```
+
+## Criando um recurso dentro do nosso novo cluster
+Dentro do `Control Plane`, vamos criar um simples NGINX.
+
+```sh
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+EOF
 ```
 
 # Backup do ETCD
