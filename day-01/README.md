@@ -20,10 +20,13 @@
   - [Criando um recurso dentro do nosso novo cluster](#criando-um-recurso-dentro-do-nosso-novo-cluster)
 - [Backup do ETCD](#backup-do-etcd)
 - [Upgrade do Cluster 1.34 -\> 1.35](#upgrade-do-cluster-134---135)
-  - [1. Atualizar kubeadm no control plane](#1-atualizar-kubeadm-no-control-plane)
+  - [1. Preparando os pacotes para atualizar kubeadm no control plane](#1-preparando-os-pacotes-para-atualizar-kubeadm-no-control-plane)
+    - [Editando o arquivo `/etc/apt/sources.list.d/kubernetes.list`](#editando-o-arquivo-etcaptsourceslistdkuberneteslist)
+    - [Adicionando o pacote com `curl`](#adicionando-o-pacote-com-curl)
   - [2. Aplicar o upgrade do control plane](#2-aplicar-o-upgrade-do-control-plane)
-  - [3. Atualizar kubelet e kubectl no control plane](#3-atualizar-kubelet-e-kubectl-no-control-plane)
-  - [4. Upgrade dos worker nodes](#4-upgrade-dos-worker-nodes)
+    - [2.1 Output do comando plan](#21-output-do-comando-plan)
+  - [3. Upgrade dos worker nodes](#3-upgrade-dos-worker-nodes)
+    - [3.1 Preparando o nó para manutenção](#31-preparando-o-nó-para-manutenção)
 - [Materiais](#materiais)
 - [Exercicio](#exercicio)
   - [Lista 1 - Day 1](#lista-1---day-1)
@@ -322,49 +325,146 @@ sudo ETCDCTL_API=3 etcdctl snapshot status /tmp/cka-snapshot.db
 # Upgrade do Cluster 1.34 -> 1.35
 Estas etapas assumem Ubuntu/Debian e Kubernetes 1.34 já instalado. Execute **primeiro no control plane**, depois em cada worker.
 
-## 1. Atualizar kubeadm no control plane
+> [!CAUTION]
+> Ao fazer o upgrade da versao 1.34 para 1.35 existe uma **breaking change**. A flag `--pod-infra-container-image` foi removida do comando `kubelet`. Esta flag foi descontinuada (`deprecated`) nesta versao e removida. 
+> Para evitar que tudo se quebre no upgrade, antes de instalar os novos binarios com `sudo apt-get install kubeadm kubectl kubelet`, remova esta flag do arquivo de argumentos do kubelet usando
+> ```sh
+> sudo sed -i 's#--pod-infra-container-image=registry.k8s.io/pause:3.10.1##g' /var/lib/kubelet/kubeadm-flags.env
+>```
+> Fonte: [Link](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.35.md#:~:text=Removed%20the%20%2D%2Dpod%2Dinfra%2Dcontainer%2Dimage%20flag%20from%20kubelet%27s%20command%20line.)
+
+
+## 1. Preparando os pacotes para atualizar kubeadm no control plane
+Primeiro precisamos fazer a atualizacao dos pacotes, ou em outras palavras mudar o repositorio de pacotes para a nova versao. Podemos manualmente trocar a versao simplesmente editando o arquivo ou executando o comando para adicinar o pacote da nova versao
+
+### Editando o arquivo `/etc/apt/sources.list.d/kubernetes.list`
+Guia: [Link](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/change-package-repository/)
+Open the file that defines the Kubernetes apt repository using a text editor of your choice:
 ```sh
-sudo apt-mark unhold kubeadm
-sudo apt-get update
-sudo apt-get install -y kubeadm=1.35.*
-sudo apt-mark hold kubeadm
+nano /etc/apt/sources.list.d/kubernetes.list
+
+# You should see a single line with the URL that contains your current Kubernetes minor version. For example, if you're using v1.34, you should see this:
+deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /
+
+# Change the version in the URL to the next available minor release, for example:
+deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /
+```
+
+### Adicionando o pacote com `curl`
+```sh
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+# Sobreescreva o arquivo quando perguntado...
+File '/etc/apt/keyrings/kubernetes-apt-keyring.gpg' exists. Overwrite? (y/N) y
+
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# Atualize os pacotes da maquina
+sudo apt update -y
+
+# Resultado
+Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.35/deb  InRelease [1,227 B]
+Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.35/deb  Packages [2,708 B]
+```
+
+Com os pacotes do apt atualizando, temos que primeiro destravar (**unhold**) o pacote do kubeadm para que possamos de fato atualizar a versao. 
+
+```sh
+# Como na versao 1.35 possui uma breaking change com a flag --pod-infra-container-image, onde a mesma nao existe nesta versao, precisamos remover ela do arquivo de parametros, para isso execute:
+sudo sed -i 's#--pod-infra-container-image=registry.k8s.io/pause:3.10.1##g' /var/lib/kubelet/kubeadm-flags.env
+
+# Reiniciao servico do kubelet
+sudo systemctl restart kubelet
+
+sudo apt-mark unhold kubeadm kubelet kubectl
+sudo apt-get install kubeadm kubectl kubelet
+
+# Verificando o update
+kubectl version
+
+kubeadm version: &version.Info{Major:"1", Minor:"35", EmulationMajor:"", EmulationMinor:"", MinCompatibilityMajor:"", MinCompatibilityMinor:"", GitVersion:"v1.35.0", GitCommit:"66452049f3d692768c39c797b21b793dce80314e", GitTreeState:"clean", BuildDate:"2025-12-17T12:39:26Z", GoVersion:"go1.25.5", Compiler:"gc", Platform:"linux/arm64"}
+
+
+kubectl get no
+
+NAME           STATUS   ROLES           AGE     VERSION
+controlplane   Ready    control-plane   6h5m    **v1.35.0**
+node01         Ready    <none>          4h36m   v1.34.3
 ```
 
 ## 2. Aplicar o upgrade do control plane
 ```sh
 sudo kubeadm upgrade plan
-sudo kubeadm upgrade apply v1.35.x
+sudo kubeadm upgrade apply v1.35
+
+# Coloque os pacotes em espera (hold) novamente
+sudo apt-mark unhold kubeadm kubelet kubectl
 ```
 
-## 3. Atualizar kubelet e kubectl no control plane
+### 2.1 Output do comando plan
 ```sh
-sudo apt-mark unhold kubelet kubectl
-sudo apt-get install -y kubelet=1.35.* kubectl=1.35.*
-sudo apt-mark hold kubelet kubectl
-sudo systemctl daemon-reload
-sudo systemctl restart kubelet
+sudo kubeadm upgrade plan
+[preflight] Running pre-flight checks.
+[upgrade/config] Reading configuration from the "kubeadm-config" ConfigMap in namespace "kube-system"...
+[upgrade/config] Use 'kubeadm init phase upload-config kubeadm --config your-config-file' to re-upload it.
+[upgrade] Running cluster health checks
+[upgrade] Fetching available versions to upgrade to
+[upgrade/versions] Cluster version: 1.34.3
+[upgrade/versions] kubeadm version: v1.35.0
+[upgrade/versions] Target version: v1.35.0
+[upgrade/versions] Latest version in the v1.34 series: v1.34.3
+
+Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
+COMPONENT   NODE           CURRENT   TARGET
+kubelet     node01         v1.34.3   v1.35.0
+kubelet     controlplane   v1.35.0   v1.35.0
+
+Upgrade to the latest stable version:
+
+COMPONENT                 NODE           CURRENT   TARGET
+kube-apiserver            controlplane   v1.34.3   v1.35.0
+kube-controller-manager   controlplane   v1.34.3   v1.35.0
+kube-scheduler            controlplane   v1.34.3   v1.35.0
+kube-proxy                               1.34.3    v1.35.0
+CoreDNS                                  v1.12.1   v1.13.1
+etcd                      controlplane   3.6.5-0   3.6.6-0
+
+You can now apply the upgrade by executing the following command:
+
+	kubeadm upgrade apply v1.35.0
+
+_____________________________________________________________________
+
+
+The table below shows the current state of component configs as understood by this version of kubeadm.
+Configs that have a "yes" mark in the "MANUAL UPGRADE REQUIRED" column require manual config upgrade or
+resetting to kubeadm defaults before a successful upgrade can be performed. The version to manually
+upgrade to is denoted in the "PREFERRED VERSION" column.
+
+API GROUP                 CURRENT VERSION   PREFERRED VERSION   MANUAL UPGRADE REQUIRED
+kubeproxy.config.k8s.io   v1alpha1          v1alpha1            no
+kubelet.config.k8s.io     v1beta1           v1beta1             no
+_____________________________________________________________________
 ```
 
-## 4. Upgrade dos worker nodes
-Em cada worker:
+
+Com o `Control Plane` atualizado vamos agora atualizar o `Worker Node`.
+
+## 3. Upgrade dos worker nodes
+Como vamos colocar um nó em manutencao, precisamos adicionar uma `taint` nele para conseguir fazer o upgrade. Vamos fazer isso usando `kubectl drain`. Este comando prepara o nó para fazer o upgrade. Quando estamos trabalhando com clusters de alta-disponibilidade (HA), este comando ira remover tudo que esta agendado neste nó e vai move-los para outros nós para que não tenhamos um *downtime* neste processo. 
+
+Ainda dentro do nó do Control Plane...
+### 3.1 Preparando o nó para manutenção
+
 ```sh
-sudo apt-mark unhold kubeadm
-sudo apt-get update
-sudo apt-get install -y kubeadm=1.35.*
-sudo apt-mark hold kubeadm
+kubectl get no
 
-sudo kubeadm upgrade node
+NAME           STATUS   ROLES           AGE     VERSION
+controlplane   Ready    control-plane   6h19m   v1.35.0
+node01         Ready    <none>          4h50m   v1.34.3
 
-sudo apt-mark unhold kubelet kubectl
-sudo apt-get install -y kubelet=1.35.* kubectl=1.35.*
-sudo apt-mark hold kubelet kubectl
-sudo systemctl daemon-reload
-sudo systemctl restart kubelet
-```
-
-Valide no control plane:
-```sh
-kubectl get nodes -o wide
+kubectl drain node01 --ignore-daemonsets --force
 ```
 
 
@@ -376,6 +476,7 @@ kubectl get nodes -o wide
 * https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/
 * https://github.com/techiescamp/cka-certification-guide
 * https://github.com/Zenardi/vagrant-kubeadm-kubernetes
+* [Upgrade do Cluster com kubeadm](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/)
 
 
 # Exercicio
