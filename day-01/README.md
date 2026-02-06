@@ -1,6 +1,7 @@
 # DAY 01
 
 - [DAY 01](#day-01)
+- [Decidindo a versao do Kubernetes](#decidindo-a-versao-do-kubernetes)
 - [Configurando o ControlPlane \& Worker Nodes](#configurando-o-controlplane--worker-nodes)
   - [1. Desativando de forma permanente o swap](#1-desativando-de-forma-permanente-o-swap)
   - [2. Habilitando os modulos `overlay` e `br_netfilter`](#2-habilitando-os-modulos-overlay-e-br_netfilter)
@@ -15,11 +16,10 @@
 - [Inicializando o Control Plane com `kubeadm`](#inicializando-o-control-plane-com-kubeadm)
 - [Instalando o Cilium CNI](#instalando-o-cilium-cni)
   - [Instalando Cilium](#instalando-cilium)
-  - [Validando Instalacao](#validando-instalacao)
   - [Instalando Cilium CNI](#instalando-cilium-cni)
+  - [Validando Instalacao](#validando-instalacao)
   - [Criando um recurso dentro do nosso novo cluster](#criando-um-recurso-dentro-do-nosso-novo-cluster)
-- [Backup do ETCD](#backup-do-etcd)
-- [Upgrade do Cluster 1.34 -\> 1.35](#upgrade-do-cluster-134---135)
+- [Upgrade do Cluster 1.33 -\> 1.34](#upgrade-do-cluster-133---134)
   - [1. Preparando os pacotes para atualizar kubeadm no control plane](#1-preparando-os-pacotes-para-atualizar-kubeadm-no-control-plane)
     - [Editando o arquivo `/etc/apt/sources.list.d/kubernetes.list`](#editando-o-arquivo-etcaptsourceslistdkuberneteslist)
     - [Adicionando o pacote com `curl`](#adicionando-o-pacote-com-curl)
@@ -30,6 +30,22 @@
 - [Materiais](#materiais)
 - [Exercicio](#exercicio)
   - [Lista 1 - Day 1](#lista-1---day-1)
+
+
+# Decidindo a versao do Kubernetes
+Para iniciarmos esta brincaderia de instalar, configurar nosso cluster e após fazer o upgrade, precisamos primeiro definir qual versão instalaremos para não termos muitos problemas no upgrade. 
+
+Como vamos trabalhar com o `Cilium` como nosso CNI, precisamos verificar sua matriz de compatilidade e verificar se a nova versão é compativel com o Cilium pois se o `Cilium` não suportar (ainda) a nova versão, não conseguiremos fazer o upgrade. 
+
+Para isso, precisamos acessar a pagina de compatibilidade do kubernetes do Cilium. Acesse clicando [aqui](https://docs.cilium.io/en/latest/network/kubernetes/compatibility/). No momento da escrita deste documento, a versao 1.35 **não** esta na lista. 
+
+| k8s Version | k8s NetworkPolicy API | CiliumNetworkPolicy |
+|-------------|-----------------------|---------------------|
+| 1.31, 1.32, 1.33, 1.34 | networking.k8s.io/v1 | `cilium.io/v2` has a [CustomResourceDefinition](https://docs.cilium.io/en/latest/glossary/#term-CustomResourceDefinition) |
+
+*Tabela extraida do site oficial da Cilium*
+
+Segundo a tabela, as versoes 1.33 e 1.34 sao compativeis, portanto o **plano** é instalarmos a versao `1.33` e realizarmos o upgrade para `1.34`.
 
 
 # Configurando o ControlPlane & Worker Nodes
@@ -100,7 +116,7 @@ Você instalará estes pacotes em todas as suas máquinas:
 * `kubectl`: o utilitário de linha de comando para se comunicar com o seu cluster.
 
 > [!IMPORTANT]
-> Estas instrucoes sao para o Kubernetes v1.34. 
+> Estas instrucoes sao para o Kubernetes v1.33. 
 
 
 ### 1. Atualize o índice de pacotes do apt e instale os pacotes necessários para usar o repositório apt do Kubernetes
@@ -114,13 +130,13 @@ sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 ```sh
 # Se o diretório `/etc/apt/keyrings` não existir, ele deverá ser criado antes do comando curl, leia a nota abaixo.
 # sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 ```
 
 ### 3. Adicione o repositório apt do Kubernetes apropriado. Observe que este repositório contém pacotes apenas para o Kubernetes `1.34`; para outras versões secundárias do Kubernetes, você precisa alterar a versão secundária do Kubernetes na URL para corresponder à versão desejada (você também deve verificar a documentação da versão do Kubernetes que pretende instalar)
 
 ```sh
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 ```
 
 ### 4. Atualize o índice de pacotes do apt, instale o kubelet, o kubeadm e o kubectl e fixe as versões correspondentes
@@ -140,10 +156,10 @@ sudo systemctl enable --now kubelet
 Hora de inicializar nosso control plane. Para isso execute siga as instrucoes abaixo.
 
 > [!IMPORTANT]
-> Execute estes comandos apenas na maquina responsavel por ser o `control plane`. 
+> Execute estes comandos apenas no `Control Plane`. 
 
 > [!CAUTION]
-> Se estiver usando o laboratorio de Vagrant, use este comando para inicializar o control plane
+> Se estiver usando o laboratório de Vagrant, use este comando para inicializar o control plane
 > ```sh
 > sudo kubeadm init --apiserver-advertise-address=192.168.201.10
 > ```
@@ -169,6 +185,8 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # Recarregue o .bashrc
 source .bashrc
+
+sudo chown $USER /etc/kubernetes/admin.conf
 ```
 
 > [!TIP] 
@@ -186,8 +204,8 @@ Depois de inicializar o control plane com `kubeadm init` e executar `kubectl get
 
 ```sh
 > kubectl get nodes
-NAME           STATUS     ROLES           AGE   VERSION
-controlplane   NotReady   control-plane   84s   v1.34.3
+NAME           STATUS     ROLES           AGE     VERSION
+controlplane   NotReady   control-plane   6m38s   v1.33.7
 ```
 
 ## Instalando Cilium
@@ -201,6 +219,39 @@ curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/d
 sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
 sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
 rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+```
+
+
+## Instalando Cilium CNI
+Para instalar o Cilium simplesmente execute
+
+> [!CAUTION]
+> Se estiver usando o laboratorio de Vagrant, use este comando para instalar o Cilium
+> ```sh
+> cilium install --set k8sServiceHost=192.168.201.10 --set k8sServicePort=6443
+> ```
+> O API server do Vagrant está no IP da rede privada (192.168.201.10), veja o `settings.yaml`
+
+```sh
+cilium install
+
+# Caso esteja usando o setup local com Vagrant, use
+cilium install --set k8sServiceHost=192.168.201.10 --set k8sServicePort=6443
+```
+
+Depois de instalado e de alguns minutos, voce pode constatar que o nó agora está Pronto (`Ready`).
+```sh
+> kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   30m   v1.33.3
+```
+
+Depois de fazer o setup nos `Worker Nodes` o daemon set do Cilium se encarregara de instalar o CNI nele e depois de ingressar no `Control Plane`, o `Worker Node` ira aparecer como Pronto (`Ready`).
+```sh
+> kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   74m   v1.33.3
+node01         Ready    <none>          73m   v1.33.3
 ```
 
 ## Validando Instalacao
@@ -236,38 +287,6 @@ Execute o seguinte comando para validar se o seu cluster possui conectividade de
 ---------------------------------------------------------------------------------------------------------------------
 ✅ 69/69 tests successful (0 warnings)
 
-```
-
-## Instalando Cilium CNI
-Para instalar o Cilium simplesmente execute
-
-> [!CAUTION]
-> Se estiver usando o laboratorio de Vagrant, use este comando para instalar o Cilium
-> ```sh
-> cilium install --set k8sServiceHost=192.168.201.10 --set k8sServicePort=6443
-> ```
-> O API server do Vagrant está no IP da rede privada (192.168.201.10), veja o `settings.yaml`
-
-```sh
-cilium install
-
-# Caso esteja usando o setup local com Vagrant, use
-cilium install --set k8sServiceHost=192.168.201.10 --set k8sServicePort=6443
-```
-
-Depois de instalado e de alguns minutos, voce pode constatar que o nó agora está Pronto (`Ready`).
-```sh
-> kubectl get nodes
-NAME           STATUS   ROLES           AGE   VERSION
-controlplane   Ready    control-plane   30m   v1.34.3
-```
-
-Depois de fazer o setup nos `Worker Nodes` o daemon set do Cilium se encarregara de instalar o CNI nele e depois de ingressar no `Control Plane`, o `Worker Node` ira aparecer como Pronto (`Ready`).
-```sh
-> kubectl get nodes
-NAME           STATUS   ROLES           AGE   VERSION
-controlplane   Ready    control-plane   74m   v1.34.3
-node01         Ready    <none>          73m   v1.34.3
 ```
 
 ## Criando um recurso dentro do nosso novo cluster
@@ -309,30 +328,9 @@ spec:
 EOF
 ```
 
-# Backup do ETCD
-Execute no **control plane**:
 
-```sh
-sudo ETCDCTL_API=3 etcdctl snapshot save /tmp/cka-snapshot.db \
-  --endpoints=https://127.0.0.1:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key
-
-sudo ETCDCTL_API=3 etcdctl snapshot status /tmp/cka-snapshot.db
-```
-
-# Upgrade do Cluster 1.34 -> 1.35
-Estas etapas assumem Ubuntu/Debian e Kubernetes 1.34 já instalado. Execute **primeiro no control plane**, depois em cada worker.
-
-> [!CAUTION]
-> Ao fazer o upgrade da versao 1.34 para 1.35 existe uma **breaking change**. A flag `--pod-infra-container-image` foi removida do comando `kubelet`. Esta flag foi descontinuada (`deprecated`) nesta versao e removida. 
-> Para evitar que tudo se quebre no upgrade, antes de instalar os novos binarios com `sudo apt-get install kubeadm kubectl kubelet`, remova esta flag do arquivo de argumentos do kubelet usando
-> ```sh
-> sudo sed -i 's#--pod-infra-container-image=registry.k8s.io/pause:3.10.1##g' /var/lib/kubelet/kubeadm-flags.env
->```
-> Fonte: [Link](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.35.md#:~:text=Removed%20the%20%2D%2Dpod%2Dinfra%2Dcontainer%2Dimage%20flag%20from%20kubelet%27s%20command%20line.)
-
+# Upgrade do Cluster 1.33 -> 1.34
+Estas etapas assumem Ubuntu/Debian e Kubernetes 1.33 já instalado. Execute **primeiro no control plane**, depois em cada worker.
 
 ## 1. Preparando os pacotes para atualizar kubeadm no control plane
 Primeiro precisamos fazer a atualizacao dos pacotes, ou em outras palavras mudar o repositorio de pacotes para a nova versao. Podemos manualmente trocar a versao simplesmente editando o arquivo ou executando o comando para adicinar o pacote da nova versao
@@ -343,60 +341,54 @@ Open the file that defines the Kubernetes apt repository using a text editor of 
 ```sh
 nano /etc/apt/sources.list.d/kubernetes.list
 
-# You should see a single line with the URL that contains your current Kubernetes minor version. For example, if you're using v1.34, you should see this:
-deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /
+# You should see a single line with the URL that contains your current Kubernetes minor version. For example, if you're using v1.33, you should see this:
+deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /
 
 # Change the version in the URL to the next available minor release, for example:
-deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /
+deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /
 ```
 
 ### Adicionando o pacote com `curl`
 ```sh
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 # Sobreescreva o arquivo quando perguntado...
 File '/etc/apt/keyrings/kubernetes-apt-keyring.gpg' exists. Overwrite? (y/N) y
 
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 # Atualize os pacotes da maquina
 sudo apt update -y
 
 # Resultado
-Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.35/deb  InRelease [1,227 B]
-Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.35/deb  Packages [2,708 B]
+Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  InRelease [1,227 B]
+Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  Packages [2,708 B]
 ```
 
 Com os pacotes do apt atualizando, temos que primeiro destravar (**unhold**) o pacote do kubeadm para que possamos de fato atualizar a versao. 
 
 ```sh
-# Como na versao 1.35 possui uma breaking change com a flag --pod-infra-container-image, onde a mesma nao existe nesta versao, precisamos remover ela do arquivo de parametros, para isso execute:
-sudo sed -i 's#--pod-infra-container-image=registry.k8s.io/pause:3.10.1##g' /var/lib/kubelet/kubeadm-flags.env
-
-# Reiniciao servico do kubelet
-sudo systemctl restart kubelet
-
 sudo apt-mark unhold kubeadm kubelet kubectl
 sudo apt-get install kubeadm kubectl kubelet
 
 # Verificando o update
 kubectl version
 
-kubeadm version: &version.Info{Major:"1", Minor:"35", EmulationMajor:"", EmulationMinor:"", MinCompatibilityMajor:"", MinCompatibilityMinor:"", GitVersion:"v1.35.0", GitCommit:"66452049f3d692768c39c797b21b793dce80314e", GitTreeState:"clean", BuildDate:"2025-12-17T12:39:26Z", GoVersion:"go1.25.5", Compiler:"gc", Platform:"linux/arm64"}
+kubeadm version: &version.Info{Major:"1", Minor:"35", EmulationMajor:"", EmulationMinor:"", MinCompatibilityMajor:"", MinCompatibilityMinor:"", GitVersion:"v1.34.0", GitCommit:"66452049f3d692768c39c797b21b793dce80314e", GitTreeState:"clean", BuildDate:"2025-12-17T12:39:26Z", GoVersion:"go1.25.5", Compiler:"gc", Platform:"linux/arm64"}
 
 
 kubectl get no
 
 NAME           STATUS   ROLES           AGE     VERSION
-controlplane   Ready    control-plane   6h5m    **v1.35.0**
-node01         Ready    <none>          4h36m   v1.34.3
+controlplane   Ready    control-plane   6h5m    **v1.34.0**
+node01         Ready    <none>          4h36m   v1.33.3
 ```
 
 ## 2. Aplicar o upgrade do control plane
 ```sh
 sudo kubeadm upgrade plan
-sudo kubeadm upgrade apply v1.35
+sudo kubeadm upgrade apply v1.34
 
 # Coloque os pacotes em espera (hold) novamente
 sudo apt-mark unhold kubeadm kubelet kubectl
@@ -413,19 +405,19 @@ sudo kubeadm upgrade plan
 [upgrade/versions] Cluster version: 1.34.3
 [upgrade/versions] kubeadm version: v1.35.0
 [upgrade/versions] Target version: v1.35.0
-[upgrade/versions] Latest version in the v1.34 series: v1.34.3
+[upgrade/versions] Latest version in the v1.33 series: v1.33.3
 
 Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
 COMPONENT   NODE           CURRENT   TARGET
-kubelet     node01         v1.34.3   v1.35.0
+kubelet     node01         v1.33.3   v1.35.0
 kubelet     controlplane   v1.35.0   v1.35.0
 
 Upgrade to the latest stable version:
 
 COMPONENT                 NODE           CURRENT   TARGET
-kube-apiserver            controlplane   v1.34.3   v1.35.0
-kube-controller-manager   controlplane   v1.34.3   v1.35.0
-kube-scheduler            controlplane   v1.34.3   v1.35.0
+kube-apiserver            controlplane   v1.33.3   v1.35.0
+kube-controller-manager   controlplane   v1.33.3   v1.35.0
+kube-scheduler            controlplane   v1.33.3   v1.35.0
 kube-proxy                               1.34.3    v1.35.0
 CoreDNS                                  v1.12.1   v1.13.1
 etcd                      controlplane   3.6.5-0   3.6.6-0
@@ -462,7 +454,7 @@ kubectl get no
 
 NAME           STATUS   ROLES           AGE     VERSION
 controlplane   Ready    control-plane   6h19m   v1.35.0
-node01         Ready    <none>          4h50m   v1.34.3
+node01         Ready    <none>          4h50m   v1.33.3
 
 kubectl drain node01 --ignore-daemonsets --force
 ```
