@@ -17,7 +17,7 @@
 - [Instalando o Cilium CNI](#instalando-o-cilium-cni)
   - [Instalando Cilium](#instalando-cilium)
   - [Instalando Cilium CNI](#instalando-cilium-cni)
-  - [Validando Instação](#validando-instação)
+  - [Validando Instalação](#validando-instalação)
   - [Criando um recurso dentro do nosso novo cluster](#criando-um-recurso-dentro-do-nosso-novo-cluster)
 - [Upgrade do Cluster 1.33 -\> 1.34](#upgrade-do-cluster-133---134)
   - [1. Preparando os pacotes para atualizar kubeadm no control plane](#1-preparando-os-pacotes-para-atualizar-kubeadm-no-control-plane)
@@ -267,7 +267,7 @@ controlplane   Ready    control-plane   74m   v1.33.3
 node01         Ready    <none>          73m   v1.33.3
 ```
 
-## Validando Instação
+## Validando Instalação
 Para verificar se o Cilium foi instalado corretamente, você pode executar o seguinte comando:
 ```sh
 > cilium status --wait
