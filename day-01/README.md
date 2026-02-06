@@ -17,7 +17,7 @@
 - [Instalando o Cilium CNI](#instalando-o-cilium-cni)
   - [Instalando Cilium](#instalando-cilium)
   - [Instalando Cilium CNI](#instalando-cilium-cni)
-  - [Validando Instalacao](#validando-instalacao)
+  - [Validando Instação](#validando-instação)
   - [Criando um recurso dentro do nosso novo cluster](#criando-um-recurso-dentro-do-nosso-novo-cluster)
 - [Upgrade do Cluster 1.33 -\> 1.34](#upgrade-do-cluster-133---134)
   - [1. Preparando os pacotes para atualizar kubeadm no control plane](#1-preparando-os-pacotes-para-atualizar-kubeadm-no-control-plane)
@@ -116,6 +116,7 @@ sudo containerd config default>/etc/containerd/config.toml
 sudo sed -i 's/SystemdCgroup.*/SystemdCgroup = true/g' /etc/containerd/config.toml
 
 sudo systemctl enable --now containerd
+sudo systemctl restart containerd
 sudo systemctl status containerd
 ```
 
@@ -194,13 +195,11 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Adicione a seguinte linha no final do .bashrc
+# Adicione a seguinte linha no final do .bashrc no usuario root
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # Recarregue o .bashrc
 source .bashrc
-
-sudo chown $USER /etc/kubernetes/admin.conf
 ```
 
 > [!TIP] 
@@ -214,7 +213,7 @@ sudo chown $USER /etc/kubernetes/admin.conf
 >```
 
 # Instalando o Cilium CNI
-Depois de inicializar o control plane com `kubeadm init` e executar `kubectl get nodes` voce percebe que o status do controlplane nao esta pronto (`NotReady`). Isso acontece pois nao configuramos ainda uma `CNI` (**Container Network Interface**). Para corrigit isso, vamos usar o [Cilium](https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/).
+Depois de inicializar o control plane com `kubeadm init` e executar `kubectl get nodes` voce percebe que o status do `Control Plane` não esta pronto (`NotReady`). Isso acontece pois não configuramos ainda uma `CNI` (**Container Network Interface**). Para corrigir isso, vamos usar o [Cilium](https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/).
 
 ```sh
 > kubectl get nodes
@@ -268,7 +267,7 @@ controlplane   Ready    control-plane   74m   v1.33.3
 node01         Ready    <none>          73m   v1.33.3
 ```
 
-## Validando Instalacao
+## Validando Instação
 Para verificar se o Cilium foi instalado corretamente, você pode executar o seguinte comando:
 ```sh
 > cilium status --wait
@@ -380,7 +379,7 @@ Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stabl
 Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  Packages [2,708 B]
 ```
 
-Com os pacotes do apt atualizando, temos que primeiro destravar (**unhold**) o pacote do kubeadm para que possamos de fato atualizar a versao. 
+Com os pacotes do apt atualizados, temos que primeiro destravar (**unhold**) o pacote do 'kubeadm' para que possamos de fato atualizar a versao. 
 
 ```sh
 sudo apt-mark unhold kubeadm kubelet kubectl
@@ -438,7 +437,7 @@ etcd                      controlplane   3.6.5-0   3.6.6-0
 
 You can now apply the upgrade by executing the following command:
 
-	kubeadm upgrade apply v1.35.0
+	kubeadm upgrade apply v1.34.0
 
 _____________________________________________________________________
 
@@ -458,10 +457,14 @@ _____________________________________________________________________
 Com o `Control Plane` atualizado vamos agora atualizar o `Worker Node`.
 
 ## 3. Upgrade dos worker nodes
-Como vamos colocar um nó em manutencao, precisamos adicionar uma `taint` nele para conseguir fazer o upgrade. Vamos fazer isso usando `kubectl drain`. Este comando prepara o nó para fazer o upgrade. Quando estamos trabalhando com clusters de alta-disponibilidade (HA), este comando ira remover tudo que esta agendado neste nó e vai move-los para outros nós para que não tenhamos um *downtime* neste processo. 
+Como vamos colocar um nó em manutencao, precisamos adicionar uma `taint` nele para conseguir fazer o upgrade. Vamos fazer isso usando `kubectl drain`. Este comando prepara o nó para fazer o upgrade. Quando estamos trabalhando com clusters de alta-disponibilidade (HA), este comando irá remover tudo que esta agendado neste nó e vai move-los para outros nós para que não tenhamos um *downtime* neste processo. 
 
-Ainda dentro do nó do Control Plane...
 ### 3.1 Preparando o nó para manutenção
+
+Ainda dentro do nó do `Control Plane`...
+
+> [!TIP] 
+> Substituia `node01` para o nome do nó que deseja fazer o upgrade.
 
 ```sh
 kubectl get no
@@ -473,7 +476,7 @@ node01         Ready    <none>          4h50m   v1.33.3
 kubectl drain node01 --ignore-daemonsets --force
 ```
 
-Agora nosso nó esta pronto para manutenção. Veja o novo status do nó
+Agora nosso nó esta pronto para manutenção. Veja o novo status do nó. Perceba o status `SchedulingDisabled`.
 ```sh
 kubectl get no
 
@@ -482,7 +485,7 @@ controlplane   Ready                    control-plane      6h19m          v1.34.
 node01         Ready,SchedulingDisabled <none>             4h50m          v1.33.3
 ```
 
-No Worker Node, repita o processo de instalacao
+No Worker Node, repita o processo de atualização
 
 ```sh
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -502,7 +505,7 @@ Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stabl
 ```
 
 
-Com os pacotes do apt atualizando, temos que primeiro destravar (**unhold**) o pacote do kubeadm para que possamos de fato atualizar a versao. 
+Com os pacotes do apt atualizando, temos que primeiro destravar (**unhold**) o pacote do `kubeadm` para que possamos de fato atualizar a versão. 
 
 ```sh
 sudo apt-mark unhold kubeadm kubelet kubectl
@@ -522,6 +525,9 @@ Travando o versão do kubeadm, kubelet e kubectl
 ```sh
 sudo apt-mark hold kubeadm kubelet kubectl
 ```
+
+> [!TIP] 
+> Substituia `node01` para o nome do nó que deseja fazer o upgrade.
 
 Agora precisamos deixar novamente nosso nó disponivel.
 ```sh

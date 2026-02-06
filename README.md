@@ -35,7 +35,7 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
 - [Instalando o Cilium CNI](day-01/README.md#instalando-o-cilium-cni)
   - [Instalando Cilium](day-01/README.md#instalando-cilium)
   - [Instalando Cilium CNI](day-01/README.md#instalando-cilium-cni)
-  - [Validando Instalacao](day-01/README.md#validando-instalacao)
+  - [Validando Instação](day-01/README.md#validando-instação)
   - [Criando um recurso dentro do nosso novo cluster](day-01/README.md#criando-um-recurso-dentro-do-nosso-novo-cluster)
 - [Upgrade do Cluster 1.33 -\> 1.34](day-01/README.md#upgrade-do-cluster-133---134)
   - [1. Preparando os pacotes para atualizar kubeadm no control plane](day-01/README.md#1-preparando-os-pacotes-para-atualizar-kubeadm-no-control-plane)
