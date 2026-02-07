@@ -24,7 +24,8 @@
     - [Editando o arquivo `/etc/apt/sources.list.d/kubernetes.list`](#editando-o-arquivo-etcaptsourceslistdkuberneteslist)
     - [Adicionando o pacote com `curl`](#adicionando-o-pacote-com-curl)
   - [2. Aplicar o upgrade do control plane](#2-aplicar-o-upgrade-do-control-plane)
-    - [2.1 Output do comando plan](#21-output-do-comando-plan)
+    - [2.1 Output do comando `kubeadm upgrade plan`](#21-output-do-comando-kubeadm-upgrade-plan)
+    - [2.2 Output do comando `kubeadm upgrade apply v1.34.3`](#22-output-do-comando-kubeadm-upgrade-apply-v1343)
   - [3. Upgrade dos worker nodes](#3-upgrade-dos-worker-nodes)
     - [3.1 Preparando o nó para manutenção](#31-preparando-o-nó-para-manutenção)
 - [O Backup e Restore do `etcd`](#o-backup-e-restore-do-etcd)
@@ -375,8 +376,8 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt update -y
 
 # Resultado
-Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  InRelease [1,227 B]
-Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  Packages [2,708 B]
+Get:5 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  InRelease [1,227 B]
+Get:8 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  Packages [6,868 B]
 ```
 
 Com os pacotes do apt atualizados, temos que primeiro destravar (**unhold**) o pacote do 'kubeadm' para que possamos de fato atualizar a versao. 
@@ -385,59 +386,77 @@ Com os pacotes do apt atualizados, temos que primeiro destravar (**unhold**) o p
 sudo apt-mark unhold kubeadm kubelet kubectl
 sudo apt-get install kubeadm kubectl kubelet
 
+# Resultado
+After this operation, 21.8 MB disk space will be freed.
+Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  kubeadm 1.34.3-1.1 [10.8 MB]
+Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  kubectl 1.34.3-1.1 [10.0 MB]
+Get:3 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  kubelet 1.34.3-1.1 [11.0 MB]
+Fetched 31.8 MB in 3s (11.7 MB/s)
+Reading changelogs... Done
+(Reading database ... 36378 files and directories currently installed.)
+Preparing to unpack .../kubeadm_1.34.3-1.1_arm64.deb ...
+Unpacking kubeadm (1.34.3-1.1) over (1.33.7-1.1) ...
+Preparing to unpack .../kubectl_1.34.3-1.1_arm64.deb ...
+Unpacking kubectl (1.34.3-1.1) over (1.33.7-1.1) ...
+Preparing to unpack .../kubelet_1.34.3-1.1_arm64.deb ...
+Unpacking kubelet (1.34.3-1.1) over (1.33.7-1.1) ...
+Setting up kubeadm (1.34.3-1.1) ...
+Setting up kubectl (1.34.3-1.1) ...
+Setting up kubelet (1.34.3-1.1) ...
+
 # Verificando o update
 kubectl version
 
-kubeadm version: &version.Info{Major:"1", Minor:"35", EmulationMajor:"", EmulationMinor:"", MinCompatibilityMajor:"", MinCompatibilityMinor:"", GitVersion:"v1.34.0", GitCommit:"66452049f3d692768c39c797b21b793dce80314e", GitTreeState:"clean", BuildDate:"2025-12-17T12:39:26Z", GoVersion:"go1.25.5", Compiler:"gc", Platform:"linux/arm64"}
-
-
-kubectl get no
-
-NAME           STATUS   ROLES           AGE     VERSION
-controlplane   Ready    control-plane   6h5m    **v1.34.0**
-node01         Ready    <none>          4h36m   v1.33.3
+# Resultado
+Client Version: v1.34.3
+Kustomize Version: v5.7.1
+Server Version: v1.33.7
 ```
 
 ## 2. Aplicar o upgrade do control plane
 ```sh
 sudo kubeadm upgrade plan
-sudo kubeadm upgrade apply v1.34
+sudo kubeadm upgrade apply v1.34.3
+sudo systemctl restart kubelet
 
 # Coloque os pacotes em espera (hold) novamente
 sudo apt-mark unhold kubeadm kubelet kubectl
 ```
 
-### 2.1 Output do comando plan
+### 2.1 Output do comando `kubeadm upgrade plan`
 ```sh
-sudo kubeadm upgrade plan
+> sudo kubeadm upgrade plan
+
+
 [preflight] Running pre-flight checks.
 [upgrade/config] Reading configuration from the "kubeadm-config" ConfigMap in namespace "kube-system"...
 [upgrade/config] Use 'kubeadm init phase upload-config kubeadm --config your-config-file' to re-upload it.
 [upgrade] Running cluster health checks
 [upgrade] Fetching available versions to upgrade to
-[upgrade/versions] Cluster version: 1.34.3
-[upgrade/versions] kubeadm version: v1.35.0
-[upgrade/versions] Target version: v1.35.0
-[upgrade/versions] Latest version in the v1.33 series: v1.33.3
+[upgrade/versions] Cluster version: 1.33.7
+[upgrade/versions] kubeadm version: v1.34.3
+I0207 16:52:59.425413    3449 version.go:260] remote version is much newer: v1.35.0; falling back to: stable-1.34
+[upgrade/versions] Target version: v1.34.3
+[upgrade/versions] Latest version in the v1.33 series: v1.33.7
 
 Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
 COMPONENT   NODE           CURRENT   TARGET
-kubelet     node01         v1.33.3   v1.35.0
-kubelet     controlplane   v1.35.0   v1.35.0
+kubelet     controlplane   v1.33.7   v1.34.3
+kubelet     node01         v1.33.7   v1.34.3
 
 Upgrade to the latest stable version:
 
-COMPONENT                 NODE           CURRENT   TARGET
-kube-apiserver            controlplane   v1.33.3   v1.35.0
-kube-controller-manager   controlplane   v1.33.3   v1.35.0
-kube-scheduler            controlplane   v1.33.3   v1.35.0
-kube-proxy                               1.34.3    v1.35.0
-CoreDNS                                  v1.12.1   v1.13.1
-etcd                      controlplane   3.6.5-0   3.6.6-0
+COMPONENT                 NODE           CURRENT    TARGET
+kube-apiserver            controlplane   v1.33.7    v1.34.3
+kube-controller-manager   controlplane   v1.33.7    v1.34.3
+kube-scheduler            controlplane   v1.33.7    v1.34.3
+kube-proxy                               1.33.7     v1.34.3
+CoreDNS                                  v1.12.0    v1.12.1
+etcd                      controlplane   3.5.24-0   3.6.5-0
 
 You can now apply the upgrade by executing the following command:
 
-	kubeadm upgrade apply v1.34.0
+	kubeadm upgrade apply v1.34.3
 
 _____________________________________________________________________
 
@@ -451,6 +470,83 @@ API GROUP                 CURRENT VERSION   PREFERRED VERSION   MANUAL UPGRADE R
 kubeproxy.config.k8s.io   v1alpha1          v1alpha1            no
 kubelet.config.k8s.io     v1beta1           v1beta1             no
 _____________________________________________________________________
+```
+
+### 2.2 Output do comando `kubeadm upgrade apply v1.34.3`
+
+```sh
+> sudo kubeadm upgrade apply v1.34.3
+
+[upgrade] Reading configuration from the "kubeadm-config" ConfigMap in namespace "kube-system"...
+[upgrade] Use 'kubeadm init phase upload-config kubeadm --config your-config-file' to re-upload it.
+[upgrade/preflight] Running preflight checks
+[upgrade] Running cluster health checks
+[upgrade/preflight] You have chosen to upgrade the cluster version to "v1.34.3"
+[upgrade/versions] Cluster version: v1.33.7
+[upgrade/versions] kubeadm version: v1.34.3
+[upgrade] Are you sure you want to proceed? [y/N]: y
+[upgrade/preflight] Pulling images required for setting up a Kubernetes cluster
+[upgrade/preflight] This might take a minute or two, depending on the speed of your internet connection
+[upgrade/preflight] You can also perform this action beforehand using 'kubeadm config images pull'
+W0207 16:54:38.400655    3466 checks.go:827] detected that the sandbox image "registry.k8s.io/pause:3.6" of the container runtime is inconsistent with that used by kubeadm. It is recommended to use "registry.k8s.io/pause:3.10.1" as the CRI sandbox image.
+[upgrade/control-plane] Upgrading your static Pod-hosted control plane to version "v1.34.3" (timeout: 5m0s)...
+[upgrade/staticpods] Writing new Static Pod manifests to "/etc/kubernetes/tmp/kubeadm-upgraded-manifests515426523"
+[upgrade/staticpods] Preparing for "etcd" upgrade
+[upgrade/staticpods] Renewing etcd-server certificate
+[upgrade/staticpods] Renewing etcd-peer certificate
+[upgrade/staticpods] Renewing etcd-healthcheck-client certificate
+[upgrade/staticpods] Moving new manifest to "/etc/kubernetes/manifests/etcd.yaml" and backing up old manifest to "/etc/kubernetes/tmp/kubeadm-backup-manifests-2026-02-07-16-55-05/etcd.yaml"
+[upgrade/staticpods] Waiting for the kubelet to restart the component
+[upgrade/staticpods] This can take up to 5m0s
+[apiclient] Found 1 Pods for label selector component=etcd
+[upgrade/staticpods] Component "etcd" upgraded successfully!
+[upgrade/etcd] Waiting for etcd to become available
+[upgrade/staticpods] Preparing for "kube-apiserver" upgrade
+[upgrade/staticpods] Renewing apiserver certificate
+[upgrade/staticpods] Renewing apiserver-kubelet-client certificate
+[upgrade/staticpods] Renewing front-proxy-client certificate
+[upgrade/staticpods] Renewing apiserver-etcd-client certificate
+[upgrade/staticpods] Moving new manifest to "/etc/kubernetes/manifests/kube-apiserver.yaml" and backing up old manifest to "/etc/kubernetes/tmp/kubeadm-backup-manifests-2026-02-07-16-55-05/kube-apiserver.yaml"
+[upgrade/staticpods] Waiting for the kubelet to restart the component
+[upgrade/staticpods] This can take up to 5m0s
+[apiclient] Found 1 Pods for label selector component=kube-apiserver
+[upgrade/staticpods] Component "kube-apiserver" upgraded successfully!
+[upgrade/staticpods] Preparing for "kube-controller-manager" upgrade
+[upgrade/staticpods] Renewing controller-manager.conf certificate
+[upgrade/staticpods] Moving new manifest to "/etc/kubernetes/manifests/kube-controller-manager.yaml" and backing up old manifest to "/etc/kubernetes/tmp/kubeadm-backup-manifests-2026-02-07-16-55-05/kube-controller-manager.yaml"
+[upgrade/staticpods] Waiting for the kubelet to restart the component
+[upgrade/staticpods] This can take up to 5m0s
+[apiclient] Found 1 Pods for label selector component=kube-controller-manager
+[upgrade/staticpods] Component "kube-controller-manager" upgraded successfully!
+[upgrade/staticpods] Preparing for "kube-scheduler" upgrade
+[upgrade/staticpods] Renewing scheduler.conf certificate
+[upgrade/staticpods] Moving new manifest to "/etc/kubernetes/manifests/kube-scheduler.yaml" and backing up old manifest to "/etc/kubernetes/tmp/kubeadm-backup-manifests-2026-02-07-16-55-05/kube-scheduler.yaml"
+[upgrade/staticpods] Waiting for the kubelet to restart the component
+[upgrade/staticpods] This can take up to 5m0s
+[apiclient] Found 1 Pods for label selector component=kube-scheduler
+[upgrade/staticpods] Component "kube-scheduler" upgraded successfully!
+[upgrade/control-plane] The control plane instance for this node was successfully upgraded!
+[upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
+[kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
+[upgrade/kubeconfig] The kubeconfig files for this node were successfully upgraded!
+W0207 16:57:39.495196    3466 postupgrade.go:116] Using temporary directory /etc/kubernetes/tmp/kubeadm-kubelet-config594129382 for kubelet config. To override it set the environment variable KUBEADM_UPGRADE_DRYRUN_DIR
+[upgrade] Backing up kubelet config file to /etc/kubernetes/tmp/kubeadm-kubelet-config594129382/config.yaml
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/instance-config.yaml"
+[patches] Applied patch of type "application/strategic-merge-patch+json" to target "kubeletconfiguration"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[upgrade/kubelet-config] The kubelet configuration for this node was successfully upgraded!
+[upgrade/bootstrap-token] Configuring bootstrap token and cluster-info RBAC rules
+[bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
+[bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
+[bootstrap-token] Configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
+[bootstrap-token] Configured RBAC rules to allow certificate rotation for all node client certificates in the cluster
+[addons] Applied essential addon: CoreDNS
+[addons] Applied essential addon: kube-proxy
+
+[upgrade] SUCCESS! A control plane node of your cluster was upgraded to "v1.34.3".
+
+[upgrade] Now please proceed with upgrading the rest of the nodes by following the right order.
 ```
 
 
@@ -470,10 +566,21 @@ Ainda dentro do nó do `Control Plane`...
 kubectl get no
 
 NAME           STATUS   ROLES           AGE     VERSION
-controlplane   Ready    control-plane   6h19m   v1.34.0
-node01         Ready    <none>          4h50m   v1.33.3
+controlplane   Ready    control-plane   6h19m   v1.34.3
+node01         Ready    <none>          4h50m   v1.33.7
 
 kubectl drain node01 --ignore-daemonsets --force
+
+# Output
+node/node01 cordoned
+Warning: ignoring DaemonSet-managed Pods: kube-system/cilium-49h88, kube-system/cilium-envoy-rtwkx, kube-system/kube-proxy-b582t
+evicting pod kube-system/coredns-66bc5c9577-qv24g
+evicting pod default/nginx-66fc78d4b8-wtjlq
+evicting pod kube-system/coredns-66bc5c9577-qf7pm
+pod/nginx-66fc78d4b8-wtjlq evicted
+pod/coredns-66bc5c9577-qf7pm evicted
+pod/coredns-66bc5c9577-qv24g evicted
+node/node01 drained
 ```
 
 Agora nosso nó esta pronto para manutenção. Veja o novo status do nó. Perceba o status `SchedulingDisabled`.
@@ -482,10 +589,10 @@ kubectl get no
 
 NAME           STATUS                   ROLES              AGE            VERSION
 controlplane   Ready                    control-plane      6h19m          v1.34.0
-node01         Ready,SchedulingDisabled <none>             4h50m          v1.33.3
+node01         Ready,SchedulingDisabled <none>             4h50m          v1.33.7
 ```
 
-No Worker Node, repita o processo de atualização
+Dentro do `Worker Node`, repita o processo de atualização
 
 ```sh
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -500,8 +607,8 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt update -y
 
 # Resultado
-Get:1 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  InRelease [1,227 B]
-Get:2 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  Packages [2,708 B]
+Get:6 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  InRelease [1,227 B]
+Get:8 https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.34/deb  Packages [6,868 B]
 ```
 
 
@@ -510,12 +617,14 @@ Com os pacotes do apt atualizando, temos que primeiro destravar (**unhold**) o p
 ```sh
 sudo apt-mark unhold kubeadm kubelet kubectl
 sudo apt-get install kubeadm kubectl kubelet
+sudo systemctl restart kubelet
 
 # Verificando o update
 kubectl version
 
-kubeadm version: &version.Info{Major:"1", Minor:"35", EmulationMajor:"", EmulationMinor:"", MinCompatibilityMajor:"", MinCompatibilityMinor:"", GitVersion:"v1.34.0", GitCommit:"66452049f3d692768c39c797b21b793dce80314e", GitTreeState:"clean", BuildDate:"2025-12-17T12:39:26Z", GoVersion:"go1.25.5", Compiler:"gc", Platform:"linux/arm64"}
-
+Client Version: v1.34.3
+Kustomize Version: v5.7.1
+Server Version: v1.33.7
 ```
 
 > [!NOTE]
@@ -529,7 +638,7 @@ sudo apt-mark hold kubeadm kubelet kubectl
 > [!TIP] 
 > Substituia `node01` para o nome do nó que deseja fazer o upgrade.
 
-Agora precisamos deixar novamente nosso nó disponivel.
+Agora precisamos deixar novamente nosso nó disponivel. Dentro do `Control Plane` execute o comando abaixo
 ```sh
 kubectl uncordon node01
 ```
@@ -550,19 +659,61 @@ O backup consiste em tirar um snapshot e salvar em algum lugar, depois faremos o
 > Na prova, esta ferramenta já irá estar previamente instalada no ambiente e pronta para usar.
 
 ```sh
-ETCD_VER=v3.5.17
+# Para instalar em arquitetura x86_64
+ETCD_VER=v3.5.21
 
-# Download
+# choose either URL
 GOOGLE_URL=https://storage.googleapis.com/etcd
-curl -L ${GOOGLE_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
+DOWNLOAD_URL=${GOOGLE_URL}
 
-# Descompactar
-tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp
+rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
 
-# Mover o binário para o PATH
-sudo mv /tmp/etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
+rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+sudo mv /tmp/etcd-download-test /usr/local/bin/
 
 # Verificar
+etcdctl version
+
+
+# Para instalr em arquitetura ARM (e.g.: VM rodando em Vagrant no MacOS)
+# Definir versão
+ETCD_VER=v3.5.21
+
+# Detectar arquitetura automaticamente (amd64 ou arm64)
+ARCH=$(dpkg --print-architecture)
+echo "Arquitetura detectada: $ARCH"
+
+# Configurar URLs
+GOOGLE_URL=https://storage.googleapis.com/etcd
+DOWNLOAD_URL=${GOOGLE_URL}
+
+# Limpar instalações anteriores ou arquivos temporários
+rm -f /tmp/etcd-${ETCD_VER}-linux-${ARCH}.tar.gz
+rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
+
+# Baixar o arquivo correto para a sua arquitetura
+echo "Baixando etcd ${ETCD_VER} para ${ARCH}..."
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-${ARCH}.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-${ARCH}.tar.gz
+
+# Extrair
+tar xzvf /tmp/etcd-${ETCD_VER}-linux-${ARCH}.tar.gz -C /tmp/etcd-download-test --strip-components=1
+
+# Instalar (Mover APENAS os binários, não a pasta)
+echo "Instalando binários em /usr/local/bin..."
+sudo mv /tmp/etcd-download-test/etcd /usr/local/bin/
+sudo mv /tmp/etcd-download-test/etcdctl /usr/local/bin/
+sudo mv /tmp/etcd-download-test/etcdutl /usr/local/bin/ 2>/dev/null || true # etcdutl existe em versões mais novas
+
+# Limpeza
+rm -f /tmp/etcd-${ETCD_VER}-linux-${ARCH}.tar.gz
+rm -rf /tmp/etcd-download-test
+
+# Testar
+echo "Verificação de versão:"
 etcdctl version
 ```
 
@@ -591,12 +742,21 @@ Fazer o backup do etcd consiste, basicamente, em tirar um "retrato" (`snapshot`)
 Para um cluster provisionado com `kubeadm` (padrão de mercado e exames CKA), você deve rodar os comandos abaixo logado no nó do `Control Plane`.
 
 ```sh
-ETCDCTL_API=3 etcdctl \
+ETCDCTL_API=3 sudo etcdctl \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
   --cert=/etc/kubernetes/pki/etcd/server.crt \
   --key=/etc/kubernetes/pki/etcd/server.key \
   snapshot save /tmp/etcd-backup.db
+
+# Output
+{"level":"info","ts":"2026-02-07T17:21:03.745106Z","caller":"snapshot/v3_snapshot.go:65","msg":"created temporary db file","path":"/tmp/etcd-backup.db.part"}
+{"level":"info","ts":"2026-02-07T17:21:03.751179Z","logger":"client","caller":"v3@v3.5.21/maintenance.go:212","msg":"opened snapshot stream; downloading"}
+{"level":"info","ts":"2026-02-07T17:21:03.751228Z","caller":"snapshot/v3_snapshot.go:73","msg":"fetching snapshot","endpoint":"https://127.0.0.1:2379"}
+{"level":"info","ts":"2026-02-07T17:21:03.807807Z","logger":"client","caller":"v3@v3.5.21/maintenance.go:220","msg":"completed snapshot read; closing"}
+{"level":"info","ts":"2026-02-07T17:21:03.834885Z","caller":"snapshot/v3_snapshot.go:88","msg":"fetched snapshot","endpoint":"https://127.0.0.1:2379","size":"7.1 MB","took":"now"}
+{"level":"info","ts":"2026-02-07T17:21:03.835124Z","caller":"snapshot/v3_snapshot.go:97","msg":"saved","path":"/tmp/etcd-backup.db"}
+Snapshot saved at /tmp/etcd-backup.db
 ```
 
 **O que cada flag faz:**
@@ -616,7 +776,7 @@ ETCDCTL_API=3 etcdctl \
 * `/tmp/etcd-backup.db`: O local e nome do arquivo de backup.
 
 > [!TIP] 
-> O ponto chave na prova eh decorar onde estao os arquivos de chave (`--cacert`, `--cert` e `--key`). Para encontrar estas informacoes, voce pode simplesmente verificar o arquivo de static pod etcd `/etc/kubernetes/manifests/etcd.yaml`.
+> O ponto chave na prova é decorar onde estão os arquivos de chave (`--cacert`, `--cert` e `--key`). Para encontrar estas informações, você pode simplesmente verificar o arquivo de static pod etcd em `/etc/kubernetes/manifests/etcd.yaml`.
 
 ## Dica de Produtividade (Simplificando o comando)
 ```sh
@@ -633,8 +793,9 @@ etcdctl snapshot save /tmp/snapshot-db
 O snapshot do etcd salva os dados (Deployments, Services, ConfigMaps, etc.). Porém, para uma recuperação completa de desastre (Disaster Recovery), recomenda-se fazer backup também dos arquivos estáticos de configuração:
 ```sh
 # Backup dos manifestos e configs
-cp -r /etc/kubernetes/ /backup/kubernetes-config/
-cp -r /var/lib/etcd/ /backup/etcd-data-raw/
+sudo mkdir /backup 
+sudo cp -r /etc/kubernetes/ /backup/kubernetes-config/
+sudo cp -r /var/lib/etcd/ /backup/etcd-data-raw/
 ```
 
 
@@ -656,12 +817,12 @@ kubectl create deployment restore --image nginx
 ### Verificando o status do `backup`
 
 ```sh
-ETCDCTL_API=3 etcdutl snapshot status /tmp/snapshot-db --write-out=table
+ETCDCTL_API=3 etcdutl snapshot status /tmp/etcd-backup.db --write-out=table
 
 +----------+----------+------------+------------+
 |   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
 +----------+----------+------------+------------+
-| fe01cf57 |       10 |          7 | 2.1 MB     |
+| bea45243 |     8464 |       1972 |     7.1 MB |
 +----------+----------+------------+------------+
 ```
 
@@ -671,15 +832,16 @@ ETCDCTL_API=3 etcdutl snapshot status /tmp/snapshot-db --write-out=table
 Restaurando o `snapshot`:
 ```sh
 # Define onde está o backup e para onde vai a restauração
-BACKUP_FILE="/tmp/snapshot-cka.db"
+BACKUP_FILE="/tmp/etcd-backup.db"
 DATA_DIR="/var/lib/etcd-backup"
 
-ETCDCTL_API=3 etcdctl snapshot restore $BACKUP_FILE \
-  --data-dir $DATA_DIR \
-  --endpoints=https://127.0.0.1:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key
+sudo etcdutl snapshot restore $BACKUP_FILE --data-dir $DATA_DIR
+
+# Output
+2026-02-07T17:40:43Z	info	snapshot/v3_snapshot.go:265	restoring snapshot	{"path": "/tmp/etcd-backup.db", "wal-dir": "/var/lib/etcd-backup/member/wal", "data-dir": "/var/lib/etcd-backup", "snap-dir": "/var/lib/etcd-backup/member/snap", "initial-memory-map-size": 10737418240}
+2026-02-07T17:40:43Z	info	membership/store.go:138	Trimming membership information from the backend...
+2026-02-07T17:40:43Z	info	membership/cluster.go:421	added member	{"cluster-id": "cdf818194e3a8c32", "local-member-id": "0", "added-peer-id": "8e9e05c52164694d", "added-peer-peer-urls": ["http://localhost:2380"], "added-peer-is-learner": false}
+2026-02-07T17:40:43Z	info	snapshot/v3_snapshot.go:293	restored snapshot	{"path": "/tmp/etcd-backup.db", "wal-dir": "/var/lib/etcd-backup/member/wal", "data-dir": "/var/lib/etcd-backup", "snap-dir": "/var/lib/etcd-backup/member/snap", "initial-memory-map-size": 10737418240}
 ```
 
 Navegue até a definição do etcd em `/etc/kubernetes/manifests/etcd.yaml` e altere os pontos de montagem e o comando de inicialização. Veja no exemplo abaixo.
