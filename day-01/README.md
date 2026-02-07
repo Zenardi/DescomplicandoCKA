@@ -648,11 +648,10 @@ kubectl uncordon node01
 
 
 # O Backup e Restore do `etcd`
-Documentacao: 
-  * [Operating etcd clusters for Kubernetes
-](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/)
+Documentação: 
+  * [Operating etcd clusters for Kubernetes](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/)
 
-O backup consiste em tirar um snapshot e salvar em algum lugar, depois faremos o export dele.
+O `backup` consiste em tirar um snapshot e salvar em algum lugar, depois faremos o `restore` dele.
 
 ## Instalar o `etcdctl`
 > [!NOTE]

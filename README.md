@@ -35,14 +35,15 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
 - [Instalando o Cilium CNI](day-01/README.md#instalando-o-cilium-cni)
   - [Instalando Cilium](day-01/README.md#instalando-cilium)
   - [Instalando Cilium CNI](day-01/README.md#instalando-cilium-cni)
-  - [Validando Instação](day-01/README.md#validando-instação)
+  - [Validando Instalação](day-01/README.md#validando-instalação)
   - [Criando um recurso dentro do nosso novo cluster](day-01/README.md#criando-um-recurso-dentro-do-nosso-novo-cluster)
 - [Upgrade do Cluster 1.33 -\> 1.34](day-01/README.md#upgrade-do-cluster-133---134)
   - [1. Preparando os pacotes para atualizar kubeadm no control plane](day-01/README.md#1-preparando-os-pacotes-para-atualizar-kubeadm-no-control-plane)
     - [Editando o arquivo `/etc/apt/sources.list.d/kubernetes.list`](day-01/README.md#editando-o-arquivo-etcaptsourceslistdkuberneteslist)
     - [Adicionando o pacote com `curl`](day-01/README.md#adicionando-o-pacote-com-curl)
   - [2. Aplicar o upgrade do control plane](day-01/README.md#2-aplicar-o-upgrade-do-control-plane)
-    - [2.1 Output do comando plan](day-01/README.md#21-output-do-comando-plan)
+    - [2.1 Output do comando `kubeadm upgrade plan`](day-01/README.md#21-output-do-comando-kubeadm-upgrade-plan)
+    - [2.2 Output do comando `kubeadm upgrade apply v1.34.3`](day-01/README.md#22-output-do-comando-kubeadm-upgrade-apply-v1343)
   - [3. Upgrade dos worker nodes](day-01/README.md#3-upgrade-dos-worker-nodes)
     - [3.1 Preparando o nó para manutenção](day-01/README.md#31-preparando-o-nó-para-manutenção)
 - [O Backup e Restore do `etcd`](day-01/README.md#o-backup-e-restore-do-etcd)
@@ -63,6 +64,8 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
   - [Lista 1 - Day 1](day-01/README.md#lista-1---day-1)
 
 </details>
+
+
 
 ---
 
