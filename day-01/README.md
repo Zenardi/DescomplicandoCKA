@@ -351,7 +351,7 @@ Primeiro precisamos fazer a atualizacao dos pacotes, ou em outras palavras mudar
 
 ### Editando o arquivo `/etc/apt/sources.list.d/kubernetes.list`
 Guia: [Link](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/change-package-repository/)
-Open the file that defines the Kubernetes apt repository using a text editor of your choice:
+Abra o arquivo que define o repositório apt do Kubernetes usando um editor de texto de sua preferência:
 ```sh
 nano /etc/apt/sources.list.d/kubernetes.list
 
@@ -658,27 +658,6 @@ O `backup` consiste em tirar um snapshot e salvar em algum lugar, depois faremos
 > Na prova, esta ferramenta já irá estar previamente instalada no ambiente e pronta para usar.
 
 ```sh
-# Para instalar em arquitetura x86_64
-ETCD_VER=v3.5.21
-
-# choose either URL
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=${GOOGLE_URL}
-
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
-
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-sudo mv /tmp/etcd-download-test /usr/local/bin/
-
-# Verificar
-etcdctl version
-
-
-# Para instalr em arquitetura ARM (e.g.: VM rodando em Vagrant no MacOS)
 # Definir versão
 ETCD_VER=v3.5.21
 
@@ -786,7 +765,7 @@ export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/server.crt
 export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/server.key
 
 # 2. Rodar o backup (agora bem mais curto)
-etcdctl snapshot save /tmp/snapshot-db
+etcdctl snapshot save /tmp/etcd-backup.db
 ```
 
 O snapshot do etcd salva os dados (Deployments, Services, ConfigMaps, etc.). Porém, para uma recuperação completa de desastre (Disaster Recovery), recomenda-se fazer backup também dos arquivos estáticos de configuração:
