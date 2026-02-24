@@ -66,25 +66,30 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
 </details>
 
 <details>
-<summary>DAY-02 - Ganhando tempo na prova e explorando a API do kubectl</summary>
+<summary>DAY-02 - Explorando Pods e dry-run</summary>
 
-- [CKA Study Guide: Pods e Fundamentos do Kubernetes](day-02/README.md#cka-study-guide-pods-e-fundamentos-do-kubernetes)
-  - [1. Modos de Criação de Recursos](day-02/README.md#1-modos-de-criação-de-recursos)
-  - [2. Anatomia de um Manifesto de Pod (YAML)](day-02/README.md#2-anatomia-de-um-manifesto-de-pod-yaml)
-  - [3. Comandos Essenciais para o Dia a Dia](day-02/README.md#3-comandos-essenciais-para-o-dia-a-dia)
-    - [Gerenciamento e Consulta](day-02/README.md#gerenciamento-e-consulta)
-    - [Exploração da API](day-02/README.md#exploração-da-api)
-  - [4. Otimização para a Prova: Dry Run e Imperatividade](day-02/README.md#4-otimização-para-a-prova-dry-run-e-imperatividade)
-  - [5. Multi-Container Pods](day-02/README.md#5-multi-container-pods)
-  - [6. Comandos e Argumentos (`command` vs `args`)](day-02/README.md#6-comandos-e-argumentos-command-vs-args)
-  - [7. Estratégias de Sucesso e Segurança](day-02/README.md#7-estratégias-de-sucesso-e-segurança)
-    - [💡 Simulado Prático: Pods e Troubleshooting](day-02/README.md#-simulado-prático-pods-e-troubleshooting)
-      - [Exercício 1: O Pod Imperativo](day-02/README.md#exercício-1-o-pod-imperativo)
-      - [Exercício 2: O Multi-container "Sidecar"](day-02/README.md#exercício-2-o-multi-container-sidecar)
-      - [Exercício 3: Sobrescrevendo Comandos](day-02/README.md#exercício-3-sobrescrevendo-comandos)
-      - [Exercício 4: O "Fast Delete" (Troca de Imagem)](day-02/README.md#exercício-4-o-fast-delete-troca-de-imagem)
-      - [Exercício 5: Investigação (Troubleshooting)](day-02/README.md#exercício-5-investigação-troubleshooting)
-    - [🛠️ Dicas de Ouro para a Prova:](day-02/README.md#️-dicas-de-ouro-para-a-prova)
+- [DAY-02 - Explorando Pods e dry-run](day-02/README.md#day-02---explorando-pods-e-dry-run)
+  - [1. Modos de Operação: Imperativo vs. Declarativo](day-02/README.md#1-modos-de-operação-imperativo-vs-declarativo)
+  - [2. Anatomia de um Manifesto de Pod](day-02/README.md#2-anatomia-de-um-manifesto-de-pod)
+  - [3. Ferramentas de Exploração e Troubleshooting](day-02/README.md#3-ferramentas-de-exploração-e-troubleshooting)
+  - [4. Estratégia "Dry Run" (O Pulo do Gato para a CKA)](day-02/README.md#4-estratégia-dry-run-o-pulo-do-gato-para-a-cka)
+  - [5. Ciclo de Vida e Atualização de Pods](day-02/README.md#5-ciclo-de-vida-e-atualização-de-pods)
+  - [6. Multi-Container Pods \& Comunicação](day-02/README.md#6-multi-container-pods--comunicação)
+  - [7. Comandos e Argumentos (`command` e `args`)](day-02/README.md#7-comandos-e-argumentos-command-e-args)
+  - [8. Dicas de Ouro para o Dia da Prova](day-02/README.md#8-dicas-de-ouro-para-o-dia-da-prova)
+- [Desafios](day-02/README.md#desafios)
+  - [🚀 Desafio 1: O "Ninja" do Imperativo](day-02/README.md#-desafio-1-o-ninja-do-imperativo)
+  - [🛠️ Desafio 2: Multi-Container e Logs](day-02/README.md#️-desafio-2-multi-container-e-logs)
+  - [⚠️ Desafio 3: O "Fix-it" (Substituição Forçada)](day-02/README.md#️-desafio-3-o-fix-it-substituição-forçada)
+  - [📚 Tabela de Consulta Rápida: Campos do Manifesto](day-02/README.md#-tabela-de-consulta-rápida-campos-do-manifesto)
+
+</details>
+
+
+<details>
+<summary>DAY-03 - </summary>
+
+
 
 </details>
 

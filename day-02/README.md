@@ -1,165 +1,191 @@
-# DAY-02 - Ganhando tempo na prova e explorando a API do kubectl
+# DAY-02 - Explorando Pods e dry-run
 
-- [DAY-02 - Ganhando tempo na prova e explorando a API do kubectl](#day-02---ganhando-tempo-na-prova-e-explorando-a-api-do-kubectl)
-- [CKA Study Guide: Pods e Fundamentos do Kubernetes](#cka-study-guide-pods-e-fundamentos-do-kubernetes)
-  - [1. Modos de Criação de Recursos](#1-modos-de-criação-de-recursos)
-  - [2. Anatomia de um Manifesto de Pod (YAML)](#2-anatomia-de-um-manifesto-de-pod-yaml)
-  - [3. Comandos Essenciais para o Dia a Dia](#3-comandos-essenciais-para-o-dia-a-dia)
-    - [Gerenciamento e Consulta](#gerenciamento-e-consulta)
-    - [Exploração da API](#exploração-da-api)
-  - [4. Otimização para a Prova: Dry Run e Imperatividade](#4-otimização-para-a-prova-dry-run-e-imperatividade)
-  - [5. Multi-Container Pods](#5-multi-container-pods)
-  - [6. Comandos e Argumentos (`command` vs `args`)](#6-comandos-e-argumentos-command-vs-args)
-  - [7. Estratégias de Sucesso e Segurança](#7-estratégias-de-sucesso-e-segurança)
-    - [💡 Simulado Prático: Pods e Troubleshooting](#-simulado-prático-pods-e-troubleshooting)
-      - [Exercício 1: O Pod Imperativo](#exercício-1-o-pod-imperativo)
-      - [Exercício 2: O Multi-container "Sidecar"](#exercício-2-o-multi-container-sidecar)
-      - [Exercício 3: Sobrescrevendo Comandos](#exercício-3-sobrescrevendo-comandos)
-      - [Exercício 4: O "Fast Delete" (Troca de Imagem)](#exercício-4-o-fast-delete-troca-de-imagem)
-      - [Exercício 5: Investigação (Troubleshooting)](#exercício-5-investigação-troubleshooting)
-    - [🛠️ Dicas de Ouro para a Prova:](#️-dicas-de-ouro-para-a-prova)
+- [DAY-02 - Explorando Pods e dry-run](#day-02---explorando-pods-e-dry-run)
+  - [1. Modos de Operação: Imperativo vs. Declarativo](#1-modos-de-operação-imperativo-vs-declarativo)
+  - [2. Anatomia de um Manifesto de Pod](#2-anatomia-de-um-manifesto-de-pod)
+  - [3. Ferramentas de Exploração e Troubleshooting](#3-ferramentas-de-exploração-e-troubleshooting)
+  - [4. Estratégia "Dry Run" (O Pulo do Gato para a CKA)](#4-estratégia-dry-run-o-pulo-do-gato-para-a-cka)
+  - [5. Ciclo de Vida e Atualização de Pods](#5-ciclo-de-vida-e-atualização-de-pods)
+  - [6. Multi-Container Pods \& Comunicação](#6-multi-container-pods--comunicação)
+  - [7. Comandos e Argumentos (`command` e `args`)](#7-comandos-e-argumentos-command-e-args)
+  - [8. Dicas de Ouro para o Dia da Prova](#8-dicas-de-ouro-para-o-dia-da-prova)
+- [Desafios](#desafios)
+  - [🚀 Desafio 1: O "Ninja" do Imperativo](#-desafio-1-o-ninja-do-imperativo)
+  - [🛠️ Desafio 2: Multi-Container e Logs](#️-desafio-2-multi-container-e-logs)
+  - [⚠️ Desafio 3: O "Fix-it" (Substituição Forçada)](#️-desafio-3-o-fix-it-substituição-forçada)
+  - [📚 Tabela de Consulta Rápida: Campos do Manifesto](#-tabela-de-consulta-rápida-campos-do-manifesto)
 
 
+## 1. Modos de Operação: Imperativo vs. Declarativo
 
-# CKA Study Guide: Pods e Fundamentos do Kubernetes
+No Kubernetes, você pode criar recursos de duas formas. Para a prova, a agilidade do imperativo combinada com a precisão do declarativo é a chave.
 
-Este guia resume os conceitos fundamentais sobre a criação, gerenciamento e troubleshooting de Pods, com foco em boas práticas para o exame **Certified Kubernetes Administrator (CKA)**.
-
-## 1. Modos de Criação de Recursos
-
-No Kubernetes, existem duas abordagens principais para gerenciar objetos:
-
-* **Imperativa:** Uso de comandos diretos (ex: `kubectl run`). É rápida e ideal para a prova.
-* **Declarativa:** Uso de manifestos YAML com o comando `kubectl apply -f`. É a prática recomendada para produção e essencial para entender a estrutura dos objetos.
+* **Imperativo (`kubectl run`):** Mais rápido para a prova. Cria o recurso diretamente.
+* **Declarativo (`kubectl apply -f file.yaml`):** Utiliza arquivos de manifesto. Ideal para configurações complexas e histórico (GitOps).
+* **Dica para a Prova:** Sempre que possível, gere o YAML de forma imperativa para não perder tempo digitando espaços e indentação manualmente.
 
 ---
 
-## 2. Anatomia de um Manifesto de Pod (YAML)
+## 2. Anatomia de um Manifesto de Pod
 
-Um manifesto básico de Pod é composto por quatro campos obrigatórios:
+Todo objeto no Kubernetes segue uma estrutura básica. Memorizar os quatro campos de primeiro nível é essencial:
 
-1. **`apiVersion`**: Versão da API (para Pods, utiliza-se `v1`).
-2. **`kind`**: Tipo do recurso (ex: `Pod`).
-3. **`metadata`**: Dados de identificação (nome, namespace, labels).
-4. **`spec`**: Definição do estado desejado (containers, imagens, portas, volumes).
-
----
-
-## 3. Comandos Essenciais para o Dia a Dia
-
-### Gerenciamento e Consulta
-
-* `kubectl get po`: Lista os Pods (forma abreviada de `pods`).
-* `kubectl describe pod <nome>`: O "melhor amigo" do administrador. Mostra detalhes do ciclo de vida, IP, Node e a **lista de eventos** (crucial para identificar erros de agendamento ou pull de imagem).
-* `kubectl logs <nome>`: Visualiza a saída padrão do container.
-
-### Exploração da API
-
-* `kubectl api-resources`: Lista todos os recursos disponíveis no cluster e suas versões.
-* `kubectl explain pod`: Documentação interativa via terminal. Use `kubectl explain pod.spec --recursive` para ver toda a árvore de campos disponíveis.
+| Campo | Descrição | Exemplo (Pod) |
+| --- | --- | --- |
+| `apiVersion` | Versão da API do recurso | `v1` |
+| `kind` | Tipo do objeto | `Pod` |
+| `metadata` | Dados de identificação | `name`, `namespace`, `labels` |
+| `spec` | Especificação do estado desejado | `containers`, `volumes`, `image` |
 
 ---
 
-## 4. Otimização para a Prova: Dry Run e Imperatividade
+## 3. Ferramentas de Exploração e Troubleshooting
 
-Para ganhar tempo e evitar erros de sintaxe, utilize o **Dry Run**:
+Estes comandos serão seus "melhores amigos" durante o exame:
+
+* **`kubectl get po`:** Lista os pods (forma abreviada de `pods`).
+* **`kubectl describe po <nome>`:** Mostra detalhes técnicos e, principalmente, a seção de **Events**. Se o pod não sobe, o motivo está no final do `describe`.
+* **`kubectl explain <recurso>`:** Funciona como um "man" do Linux. Ex: `kubectl explain pod.spec.containers` mostra todos os campos possíveis para containers. Use `--recursive` para ver a árvore completa.
+* **`kubectl logs <nome-do-pod>`:** Essencial para ver o que está acontecendo dentro da aplicação (ex: erro de conexão com banco).
+
+---
+
+## 4. Estratégia "Dry Run" (O Pulo do Gato para a CKA)
+
+Para ganhar tempo, não escreva YAML do zero. Use o comando de criação simulada:
 
 ```bash
-# Gera o YAML de um pod sem criá-lo no cluster
 kubectl run meu-pod --image=nginx --dry-run=client -o yaml > pod.yaml
 
 ```
 
-* **Edição rápida:** Use `kubectl replace --force -f pod.yaml` para deletar e recriar um pod instantaneamente.
-* **Aceleração:** O parâmetro `--grace-period=0 --force` ignora o tempo de encerramento amigável, economizando segundos preciosos no exame.
+* `--dry-run=client`: Valida o comando sem criar o recurso no cluster.
+* `-o yaml`: Exporta a saída no formato YAML.
+* **Ação:** Edite o arquivo `pod.yaml` gerado e aplique com `kubectl apply -f pod.yaml`.
 
 ---
 
-## 5. Multi-Container Pods
+## 5. Ciclo de Vida e Atualização de Pods
 
-* **Shared Network:** Containers no mesmo Pod compartilham o `localhost`. Se um container roda Nginx (80) e outro Redis (6379), eles se comunicam via `localhost:6379`.
-* **Agendamento:** Todos os containers de um mesmo Pod são obrigatoriamente escalonados para o **mesmo Nó**.
+* **Imutabilidade:** Pods são as menores unidades e não são "editáveis" em todos os campos. Se precisar mudar algo estrutural (como o comando), você deve substituir o pod.
+* **`kubectl replace --force -f pod.yaml`:** Deleta o pod atual e cria um novo instantaneamente.
+* **`--grace-period=0`:** Remove o tempo de espera de 30 segundos para o desligamento amigável. **Cuidado:** Use apenas se tiver certeza, para ganhar segundos preciosos na prova.
 
 ---
 
-## 6. Comandos e Argumentos (`command` vs `args`)
+## 6. Multi-Container Pods & Comunicação
 
-No Kubernetes, você pode sobrescrever as definições da imagem Docker:
+* **Shared Network:** Containers no mesmo Pod compartilham o mesmo IP e rede. Eles se comunicam via `localhost`.
+* **Agendamento:** Eles sempre serão criados no **mesmo Node**.
+* **Exemplo:** Um container de aplicação (Nginx) acessando um banco de cache (Redis) via `localhost:6379`.
 
-* **`command`**: Sobrescreve o `ENTRYPOINT`.
-* **`args`**: Sobrescreve o `CMD`.
+---
 
-**Exemplo de sintaxe:**
+## 7. Comandos e Argumentos (`command` e `args`)
 
+Muitas questões pedem para alterar o comportamento padrão da imagem:
+
+* **`command`:** Sobrescreve o `ENTRYPOINT` do Docker.
+* **`args`:** Sobrescreve o `CMD` do Docker (passa parâmetros para o comando).
+* **Sintaxe no YAML:**
 ```yaml
 spec:
   containers:
   - name: alpine
     image: alpine
     command: ["/bin/sh"]
-    args: ["-c", "echo 'Estudando para a CKA' && sleep 3600"]
+    args: ["-c", "echo Olá Mundo; sleep 3600"]
 
 ```
 
----
 
-## 7. Estratégias de Sucesso e Segurança
-
-* **Backup Sempre:** Antes de editar um recurso com `kubectl edit`, salve o estado atual: `kubectl get po <nome> -o yaml > backup-ex1.yaml`.
-* **Organização:** Crie diretórios separados para cada questão ou exercício (Ex: `mkdir EX1`).
-* **Cuidado com Tipografia:** Erros comuns incluem indentação incorreta, falta de dois pontos (`:`) ou confusão entre maiúsculas e minúsculas.
-* **Não perca tempo com Aliases:** Foque em aprender o comando e o recurso. O tempo gasto configurando ambientes complexos de atalhos pode não compensar durante a prova.
-* **Copy & Paste:** Sempre copie nomes de imagens e hashes diretamente do enunciado para evitar erros de digitação.
 
 ---
 
-### 💡 Simulado Prático: Pods e Troubleshooting
+## 8. Dicas de Ouro para o Dia da Prova
 
-#### Exercício 1: O Pod Imperativo
-
-Crie um pod chamado `nginx-cka` usando a imagem `nginx:1.19`.
-
-* O pod deve ter a label `env=prod`.
-* Gere o arquivo YAML primeiro (`pod1.yaml`) e depois aplique-o.
-* **Desafio:** Verifique em qual Nó (Node) o pod foi agendado sem usar o `describe`.
-
-#### Exercício 2: O Multi-container "Sidecar"
-
-Crie um pod chamado `multi-app` com dois containers:
-
-1. Container principal: Imagem `nginx`.
-2. Container auxiliar: Imagem `redis`.
-
-* Exporte o YAML e verifique se ambos estão no mesmo pod.
-
-#### Exercício 3: Sobrescrevendo Comandos
-
-Crie um pod chamado `busybox-quic` usando a imagem `busybox`.
-
-* O container deve executar o comando `sh -c "echo 'Kubernetes is awesome' && sleep 3600"`.
-* Certifique-se de usar os campos `command` e `args` separadamente no YAML.
-
-#### Exercício 4: O "Fast Delete" (Troca de Imagem)
-
-Você tem um pod rodando com a imagem `nginx:1.14`. Você precisa atualizá-lo para `nginx:1.21` da forma mais rápida possível, forçando a substituição.
-
-* Use o `kubectl get pod <nome> -o yaml > pod-update.yaml`.
-* Altere a versão no arquivo.
-* Use o comando `replace` com `--force` e `--grace-period=0`.
-
-#### Exercício 5: Investigação (Troubleshooting)
-
-Tente criar um pod com uma imagem que não existe (ex: `nginx:9999`).
-
-1. Use o `kubectl describe` para identificar o erro exato nos **Events**.
-2. Use o `kubectl explain pod.spec.containers` para descobrir como configurar a política de pull da imagem para `IfNotPresent`.
+1. **Backups são vida:** Antes de editar um recurso com `kubectl edit`, salve uma cópia (`kubectl get po nome -o yaml > backup.yaml`). Se você errar a indentação e o pod sumir, você tem o original.
+2. **Organização:** Crie pastas por questão (`mkdir ex1`, `mkdir ex2`).
+3. **Cuidado com Typo:** Erros de digitação em nomes de imagens ou labels invalidam a questão. **Copy-paste** os valores do enunciado sempre.
+4. **Aliases:** Não perca tempo configurando dezenas de aliases. O comando `alias k=kubectl` e o autocomplete (`source <(kubectl completion bash)`) já são suficientes.
 
 ---
 
-### 🛠️ Dicas de Ouro para a Prova:
 
-* **Não digite YAML do zero:** Use sempre o `kubectl run ... --dry-run=client -o yaml`.
-* **Shortcuts:** Use `po` para pods, `ns` para namespaces e `deploy` para deployments.
-* **Auto-complete:** No início da prova, verifique se o autocomplete está ativo (`source <(kubectl completion bash)`).
+
+Perfeito! Vamos transformar esse guia em um **Simulado de Treinamento Intensivo** focado na realidade da prova CKA. Como a certificação é prática, a melhor forma de fixar é resolvendo cenários reais.
+
+Abaixo, apresento um **Hands-on de Fixação** com 3 desafios baseados nos tópicos da aula.
 
 ---
+
+
+# Desafios
+
+## 🚀 Desafio 1: O "Ninja" do Imperativo
+
+**Cenário:** Você precisa criar um Pod chamado `pod-nginx` no namespace `default`.
+
+* **Imagem:** `nginx:alpine`
+* **Label:** `tier=frontend`
+* **Porta:** `80`
+* **Tarefa:** Gere o arquivo `pod-nginx.yaml` sem criar o recurso, adicione manualmente uma variável de ambiente `APP_ENV=prod` no arquivo e então aplique.
+
+**Comando Mestre:**
+
+```bash
+kubectl run pod-nginx --image=nginx:alpine --labels="tier=frontend" --port=80 --dry-run=client -o yaml > pod-nginx.yaml
+
+```
+
+> **Dica CKA:** Após gerar o YAML, abra com `vi pod-nginx.yaml` e insira a seção `env:` dentro de `containers:`.
+
+---
+
+## 🛠️ Desafio 2: Multi-Container e Logs
+
+**Cenário:** Crie um Pod chamado `multi-app` com dois containers:
+
+1. **Container 1:** Nome `app-server`, imagem `nginx`.
+2. **Container 2:** Nome `log-shredder`, imagem `busybox`, rodando o comando `sh -c "while true; do echo 'Processando logs...'; sleep 10; done"`.
+
+**Checklist de Troubleshooting:**
+
+* Use `kubectl describe pod multi-app` para ver se ambos iniciaram.
+* Use `kubectl logs multi-app -c log-shredder` para validar se o segundo container está escrevendo os logs.
+
+---
+
+## ⚠️ Desafio 3: O "Fix-it" (Substituição Forçada)
+
+**Cenário:** Um Pod existente chamado `old-app` está rodando com a imagem `redis:5`. O examinador pede para você mudar a imagem para `redis:6` e adicionar o argumento `--appendonly yes`, mas o `kubectl edit` está dando erro de validação.
+
+**Procedimento de Emergência:**
+
+1. **Exportar:** `kubectl get pod old-app -o yaml > fix.yaml`
+2. **Editar:** Mude a versão da imagem e adicione a seção `args: ["--appendonly", "yes"]`.
+3. **Substituir:**
+
+```bash
+kubectl replace --force -f fix.yaml
+
+```
+
+*O `--force` garante que o K8s delete o antigo e crie o novo imediatamente, ignorando o tempo de espera padrão.*
+
+---
+
+## 📚 Tabela de Consulta Rápida: Campos do Manifesto
+
+Para não se perder no `kubectl explain`, aqui está o mapa mental:
+
+| Nível no YAML | Campo Chave | O que define? |
+| --- | --- | --- |
+| `metadata` | `annotations` | Notas não identificáveis (logs, descrições). |
+| `spec` | `nodeName` | Força o Pod a rodar em um nó específico. |
+| `spec.containers` | `imagePullPolicy` | `Always`, `Never` ou `IfNotPresent`. |
+| `spec.containers` | `resources` | Limites de CPU e Memória (Essencial na CKA). |
+| `spec.containers` | `volumeMounts` | Onde o disco será montado dentro do container. |
+
+---
+
