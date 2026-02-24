@@ -1,3 +1,26 @@
+# DAY-02 - Ganhando tempo na prova e explorando a API do kubectl
+
+- [DAY-02 - Ganhando tempo na prova e explorando a API do kubectl](#day-02---ganhando-tempo-na-prova-e-explorando-a-api-do-kubectl)
+- [CKA Study Guide: Pods e Fundamentos do Kubernetes](#cka-study-guide-pods-e-fundamentos-do-kubernetes)
+  - [1. Modos de Criação de Recursos](#1-modos-de-criação-de-recursos)
+  - [2. Anatomia de um Manifesto de Pod (YAML)](#2-anatomia-de-um-manifesto-de-pod-yaml)
+  - [3. Comandos Essenciais para o Dia a Dia](#3-comandos-essenciais-para-o-dia-a-dia)
+    - [Gerenciamento e Consulta](#gerenciamento-e-consulta)
+    - [Exploração da API](#exploração-da-api)
+  - [4. Otimização para a Prova: Dry Run e Imperatividade](#4-otimização-para-a-prova-dry-run-e-imperatividade)
+  - [5. Multi-Container Pods](#5-multi-container-pods)
+  - [6. Comandos e Argumentos (`command` vs `args`)](#6-comandos-e-argumentos-command-vs-args)
+  - [7. Estratégias de Sucesso e Segurança](#7-estratégias-de-sucesso-e-segurança)
+    - [💡 Simulado Prático: Pods e Troubleshooting](#-simulado-prático-pods-e-troubleshooting)
+      - [Exercício 1: O Pod Imperativo](#exercício-1-o-pod-imperativo)
+      - [Exercício 2: O Multi-container "Sidecar"](#exercício-2-o-multi-container-sidecar)
+      - [Exercício 3: Sobrescrevendo Comandos](#exercício-3-sobrescrevendo-comandos)
+      - [Exercício 4: O "Fast Delete" (Troca de Imagem)](#exercício-4-o-fast-delete-troca-de-imagem)
+      - [Exercício 5: Investigação (Troubleshooting)](#exercício-5-investigação-troubleshooting)
+    - [🛠️ Dicas de Ouro para a Prova:](#️-dicas-de-ouro-para-a-prova)
+
+
+
 # CKA Study Guide: Pods e Fundamentos do Kubernetes
 
 Este guia resume os conceitos fundamentais sobre a criação, gerenciamento e troubleshooting de Pods, com foco em boas práticas para o exame **Certified Kubernetes Administrator (CKA)**.

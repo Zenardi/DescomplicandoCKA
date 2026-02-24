@@ -65,8 +65,30 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
 
 </details>
 
+<details>
+<summary>DAY-02 - Ganhando tempo na prova e explorando a API do kubectl</summary>
 
+- [CKA Study Guide: Pods e Fundamentos do Kubernetes](day-02/README.md#cka-study-guide-pods-e-fundamentos-do-kubernetes)
+  - [1. Modos de Criação de Recursos](day-02/README.md#1-modos-de-criação-de-recursos)
+  - [2. Anatomia de um Manifesto de Pod (YAML)](day-02/README.md#2-anatomia-de-um-manifesto-de-pod-yaml)
+  - [3. Comandos Essenciais para o Dia a Dia](day-02/README.md#3-comandos-essenciais-para-o-dia-a-dia)
+    - [Gerenciamento e Consulta](day-02/README.md#gerenciamento-e-consulta)
+    - [Exploração da API](day-02/README.md#exploração-da-api)
+  - [4. Otimização para a Prova: Dry Run e Imperatividade](day-02/README.md#4-otimização-para-a-prova-dry-run-e-imperatividade)
+  - [5. Multi-Container Pods](day-02/README.md#5-multi-container-pods)
+  - [6. Comandos e Argumentos (`command` vs `args`)](day-02/README.md#6-comandos-e-argumentos-command-vs-args)
+  - [7. Estratégias de Sucesso e Segurança](day-02/README.md#7-estratégias-de-sucesso-e-segurança)
+    - [💡 Simulado Prático: Pods e Troubleshooting](day-02/README.md#-simulado-prático-pods-e-troubleshooting)
+      - [Exercício 1: O Pod Imperativo](day-02/README.md#exercício-1-o-pod-imperativo)
+      - [Exercício 2: O Multi-container "Sidecar"](day-02/README.md#exercício-2-o-multi-container-sidecar)
+      - [Exercício 3: Sobrescrevendo Comandos](day-02/README.md#exercício-3-sobrescrevendo-comandos)
+      - [Exercício 4: O "Fast Delete" (Troca de Imagem)](day-02/README.md#exercício-4-o-fast-delete-troca-de-imagem)
+      - [Exercício 5: Investigação (Troubleshooting)](day-02/README.md#exercício-5-investigação-troubleshooting)
+    - [🛠️ Dicas de Ouro para a Prova:](day-02/README.md#️-dicas-de-ouro-para-a-prova)
 
+</details>
+
+---
 ---
 
 
