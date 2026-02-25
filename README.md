@@ -65,6 +65,8 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
 
 </details>
 
+&nbsp;
+
 <details>
 <summary>DAY-02 - Explorando Pods e dry-run</summary>
 
@@ -85,16 +87,26 @@ Treinamento para Cerificação Certified Kubernetes Administrator da [LINUXtips]
 
 </details>
 
+&nbsp;
 
 <details>
-<summary>DAY-03 - </summary>
+<summary>DAY-03 - Explorando ConfigMaps e Secrets</summary>
 
-
+- [DAY-03 - Explorando ConfigMaps e Secrets](day-03/README.md#day-03---explorando-configmaps-e-secrets)
+    - [1. Variáveis de Ambiente (Environment Variables)](day-03/README.md#1-variáveis-de-ambiente-environment-variables)
+    - [2. ConfigMaps](day-03/README.md#2-configmaps)
+      - [Criação de ConfigMaps (Prática Imperativa)](day-03/README.md#criação-de-configmaps-prática-imperativa)
+      - [3 Formas de Injetar um ConfigMap no Pod](day-03/README.md#3-formas-de-injetar-um-configmap-no-pod)
+    - [3. Secrets](day-03/README.md#3-secrets)
 
 </details>
 
+&nbsp;
+
 ---
----
+
+&nbsp;
+&nbsp;
 
 
 A prova **CKA (Certified Kubernetes Administrator)** é considerada uma das certificações mais respeitadas e práticas do mercado de TI. Diferente de provas teóricas de múltipla escolha (como as da AWS ou Azure), a CKA é **100% "mão na massa" (hands-on)**.
